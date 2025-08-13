@@ -21,9 +21,9 @@ export default withApiKeyValidation(async (event) => {
       })
     }
 
-    // 요청 본문 파싱
-    const body = await readBody(event)
-    const { password } = deletePostSchema.parse(body)
+    // Query parameter에서 비밀번호 읽기
+    const query = getQuery(event)
+    const { password } = deletePostSchema.parse(query)
 
     const supabase = await serverSupabaseClient<Database>(event)
 

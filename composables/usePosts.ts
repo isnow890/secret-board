@@ -379,9 +379,8 @@ export const usePost = (postId: string) => {
   // 게시글 삭제
   const deletePost = async (password: string): Promise<boolean> => {
     try {
-      const response = await $fetch(`/api/posts/${postId}`, {
+      const response = await $fetch(`/api/posts/${postId}?password=${encodeURIComponent(password)}`, {
         method: "DELETE" as any,
-        body: { password },
       });
 
       if (response?.success) {
