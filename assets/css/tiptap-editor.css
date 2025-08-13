@@ -1,0 +1,557 @@
+/* TipTap Editor Styles */
+
+/* Container and Layout */
+.tiptap-editor-container {
+  @apply rounded-lg overflow-hidden;
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-secondary);
+}
+
+.tiptap-toolbar {
+  @apply flex items-center gap-1 p-2 bg-background-secondary border-b border-border-muted;
+  flex-wrap: wrap;
+}
+
+.tiptap-editor-content {
+  @apply min-h-[200px];
+  padding: 0.75rem 0.5rem; /* 12px top/bottom, 8px left/right */
+}
+
+/* Mobile - even smaller padding */
+@media (max-width: 640px) {
+  .tiptap-editor-content {
+    padding: 0.5rem 0.375rem; /* 8px top/bottom, 6px left/right */
+  }
+}
+
+/* Toolbar Buttons */
+.toolbar-btn {
+  @apply flex items-center justify-center w-8 h-8 rounded hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors;
+  min-width: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.toolbar-btn:disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.toolbar-btn.is-active {
+  @apply bg-accent-blue text-white;
+}
+
+.toolbar-select {
+  @apply px-2 py-1 text-xs bg-background-primary border border-border-muted rounded text-text-primary;
+  min-width: 100px;
+}
+
+.toolbar-select:focus {
+  @apply outline-none ring-1 ring-accent-blue;
+}
+
+.toolbar-divider {
+  @apply w-px h-6 bg-border-muted mx-1;
+}
+
+/* ProseMirror Editor Content */
+.ProseMirror {
+  @apply outline-none text-text-primary;
+  min-height: 200px;
+}
+
+.ProseMirror.is-editor-empty::before {
+  @apply text-text-tertiary;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Typography */
+.ProseMirror h1 {
+  @apply text-2xl font-bold mt-6 mb-4;
+}
+
+.ProseMirror h2 {
+  @apply text-xl font-bold mt-5 mb-3;
+}
+
+.ProseMirror h3 {
+  @apply text-lg font-bold mt-4 mb-2;
+}
+
+.ProseMirror ul {
+  @apply list-disc pl-6 my-4;
+}
+
+.ProseMirror ol {
+  @apply list-decimal pl-6 my-4;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-accent-blue pl-4 my-4 text-text-secondary italic;
+}
+
+/* Image Styles */
+.ProseMirror .editor-image {
+  @apply max-w-full h-auto rounded-lg my-4 cursor-pointer transition-all duration-200;
+}
+
+.ProseMirror img {
+  @apply cursor-pointer;
+}
+
+.ProseMirror .editor-image:hover {
+  @apply shadow-md;
+}
+
+.ProseMirror .editor-image.selected-image {
+  @apply ring-2 ring-accent-blue shadow-lg;
+}
+
+/* Force pointer cursor for all images */
+.ProseMirror img[src] {
+  cursor: pointer !important;
+}
+
+/* YouTube Video Styles */
+.ProseMirror .editor-youtube {
+  @apply w-full max-w-2xl mx-auto my-4 rounded-lg overflow-hidden;
+}
+
+.ProseMirror .editor-youtube iframe {
+  @apply w-full h-auto aspect-video rounded-lg;
+}
+
+/* TipTap YouTube extension specific styles */
+.ProseMirror iframe[src*="youtube"] {
+  @apply w-full max-w-2xl mx-auto my-4 rounded-lg;
+  aspect-ratio: 16 / 9;
+}
+
+.ProseMirror div[data-youtube-video] {
+  @apply w-full max-w-2xl mx-auto my-4 rounded-lg overflow-hidden;
+}
+
+/* Code Block Styling - Notion Style */
+.ProseMirror .editor-code-block {
+  @apply bg-gray-900 text-gray-100 rounded-lg my-4 relative;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow: visible; /* Allow absolute positioned header to show */
+}
+
+.ProseMirror .editor-code-block pre {
+  @apply m-0;
+  background: transparent !important;
+  border-radius: 0.5rem;
+  padding: 3.5rem 1rem 1rem 1rem !important; /* top right bottom left - Space for header, reduced padding */
+}
+
+/* More specific rule for TiptapEditor to ensure padding is applied */
+.tiptap-editor-container .ProseMirror .editor-code-block pre {
+  padding: 3.5rem 1rem 1rem 1rem !important; /* Ensure editor has reduced padding */
+}
+
+/* Mobile code block - even smaller padding */
+@media (max-width: 640px) {
+  .ProseMirror .editor-code-block pre {
+    padding: 3.5rem 0.75rem 0.75rem 0.75rem !important;
+  }
+  
+  .tiptap-editor-container .ProseMirror .editor-code-block pre {
+    padding: 3.5rem 0.75rem 0.75rem 0.75rem !important;
+  }
+}
+
+.ProseMirror .editor-code-block code {
+  @apply text-gray-100;
+  background: transparent !important;
+  padding: 0 !important;
+  display: block;
+  line-height: 1.5;
+}
+
+/* Additional padding for code content in editor */
+/* 코드블럭 패딩 */
+.tiptap-editor-container .ProseMirror .editor-code-block code {
+  padding: 1rem !important;
+}
+
+/* Code Block Header - Notion Style (Absolute positioned top-right) */
+.code-block-header {
+  @apply absolute top-2 right-2 flex items-center gap-2 bg-gray-800 px-3 py-1.5 text-xs rounded-md;
+  z-index: 10;
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  backdrop-filter: blur(4px);
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    sans-serif;
+}
+
+.code-block-header:hover {
+  opacity: 1;
+}
+
+.code-language {
+  @apply text-xs font-medium text-gray-300;
+  user-select: none;
+  margin-right: 0.25rem;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    sans-serif;
+}
+
+.copy-button {
+  @apply p-1 rounded hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  width: 20px;
+  height: 20px;
+}
+
+.copy-button:hover {
+  @apply bg-gray-700;
+}
+
+.copy-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Syntax Highlighting Colors - Modern Theme */
+.ProseMirror .editor-code-block .hljs-keyword {
+  color: #569cd6; /* 파란색 - SQL keywords like SELECT, FROM, WHERE */
+  font-weight: 600;
+}
+
+.ProseMirror .editor-code-block .hljs-string {
+  color: #ce9178; /* 오렌지 - 문자열 */
+}
+
+.ProseMirror .editor-code-block .hljs-number {
+  color: #b5cea8; /* 연한 녹색 - 숫자 */
+}
+
+.ProseMirror .editor-code-block .hljs-comment {
+  color: #6a9955; /* 녹색 - 주석 */
+  font-style: italic;
+}
+
+.ProseMirror .editor-code-block .hljs-function {
+  color: #dcdcaa; /* 노란색 - 함수명 */
+  font-weight: 500;
+}
+
+.ProseMirror .editor-code-block .hljs-variable {
+  color: #9cdcfe; /* 연한 파란색 - 변수 */
+}
+
+.ProseMirror .editor-code-block .hljs-title {
+  color: #4ec9b0; /* 청록색 - 타이틀 */
+  font-weight: 600;
+}
+
+.ProseMirror .editor-code-block .hljs-class {
+  color: #4ec9b0; /* 청록색 - 클래스명 */
+  font-weight: 600;
+}
+
+.ProseMirror .editor-code-block .hljs-attribute {
+  color: #92c5f7; /* 연한 파란색 - 속성 */
+}
+
+.ProseMirror .editor-code-block .hljs-built_in {
+  color: #4fc1ff; /* 밝은 파란색 - 내장 함수 */
+  font-weight: 500;
+}
+
+.ProseMirror .editor-code-block .hljs-tag {
+  color: #569cd6; /* 파란색 - HTML 태그 */
+}
+
+.ProseMirror .editor-code-block .hljs-operator {
+  color: #d4d4d4; /* 연한 회색 - 연산자 */
+}
+
+.ProseMirror .editor-code-block .hljs-name {
+  @apply text-gray-300;
+}
+
+.ProseMirror .editor-code-block .hljs-selector-tag {
+  @apply text-gray-300;
+}
+
+.ProseMirror .editor-code-block .hljs-selector-class {
+  @apply text-gray-400;
+}
+
+.ProseMirror .editor-code-block .hljs-selector-id {
+  @apply text-gray-200;
+}
+
+/* ProseMirror Common Editor Styles */
+.ProseMirror {
+  @apply outline-none text-text-primary;
+  min-height: 200px;
+}
+
+.ProseMirror.is-editor-empty::before {
+  @apply text-text-tertiary;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Typography */
+.ProseMirror h1 {
+  @apply text-2xl font-bold mt-6 mb-4;
+}
+
+.ProseMirror h2 {
+  @apply text-xl font-bold mt-5 mb-3;
+}
+
+.ProseMirror h3 {
+  @apply text-lg font-bold mt-4 mb-2;
+}
+
+.ProseMirror ul {
+  @apply list-disc pl-6 my-4;
+}
+
+.ProseMirror ol {
+  @apply list-decimal pl-6 my-4;
+}
+
+.ProseMirror blockquote {
+  @apply border-l-4 border-accent-blue pl-4 my-4 text-text-secondary italic;
+}
+
+/* Image Common Styles */
+.ProseMirror .editor-image {
+  @apply max-w-full h-auto rounded-lg my-4 cursor-pointer transition-all duration-200;
+}
+
+.ProseMirror img {
+  @apply cursor-pointer;
+}
+
+.ProseMirror .editor-image:hover {
+  @apply shadow-md;
+}
+
+.ProseMirror .editor-image.selected-image {
+  @apply ring-2 ring-accent-blue shadow-lg;
+}
+
+/* Force pointer cursor for all images */
+.ProseMirror img[src] {
+  cursor: pointer !important;
+}
+
+/* Resizable Image Styles */
+.ProseMirror .resizable-image {
+  @apply max-w-full h-auto rounded-lg my-4 cursor-pointer transition-all duration-200;
+  position: relative;
+  display: inline-block;
+}
+
+.ProseMirror .resizable-image:hover {
+  @apply shadow-md;
+}
+
+.ProseMirror .resizable-image.selected-image {
+  @apply ring-2 ring-accent-blue shadow-lg;
+}
+
+/* Resize Handles */
+.resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: #3b82f6;
+  border: 2px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 9999;
+  transition: transform 0.1s;
+  pointer-events: auto;
+}
+
+.resize-handle:hover {
+  transform: scale(1.2);
+}
+
+.resize-nw {
+  cursor: nw-resize;
+}
+
+.resize-ne {
+  cursor: ne-resize;
+}
+
+.resize-sw {
+  cursor: sw-resize;
+}
+
+.resize-se {
+  cursor: se-resize;
+}
+
+/* Upload Progress Styles */
+.upload-progress-container {
+  @apply fixed top-4 right-4 z-50 space-y-2;
+  max-width: 300px;
+}
+
+.upload-progress-item {
+  @apply bg-background-primary border border-border-muted rounded-lg p-3 shadow-lg;
+}
+
+.upload-info {
+  @apply flex items-center gap-2 mb-2;
+}
+
+.upload-filename {
+  @apply flex-1 text-sm font-medium text-text-primary truncate;
+}
+
+.upload-percentage {
+  @apply text-xs text-text-tertiary;
+}
+
+.upload-progress-bar {
+  @apply w-full bg-background-tertiary rounded-full h-2;
+}
+
+.upload-progress-fill {
+  @apply h-2 rounded-full bg-gradient-to-r from-accent-blue to-green-500 transition-all duration-300;
+}
+
+/* Viewer Specific Styles */
+.tiptap-viewer {
+  @apply text-text-primary;
+}
+
+/* Hide editor-only elements in viewer */
+.tiptap-viewer .tiptap-toolbar,
+.tiptap-viewer .toolbar-btn,
+.tiptap-viewer .toolbar-select {
+  display: none !important;
+}
+
+/* Viewer container styles */
+.tiptap-viewer .tiptap-editor-container {
+  @apply border-0 bg-transparent;
+}
+
+/* Hide resize handles in viewer */
+.tiptap-viewer .resize-handle {
+  display: none !important;
+}
+
+.tiptap-viewer .selected-image {
+  outline: none !important;
+}
+
+/* Viewer ProseMirror styles */
+.tiptap-viewer .ProseMirror {
+  outline: none !important;
+  border: none !important;
+  padding: 0.75rem 0.5rem !important; /* 12px top/bottom, 8px left/right */
+}
+
+/* Mobile viewer - even smaller padding */
+@media (max-width: 640px) {
+  .tiptap-viewer .ProseMirror {
+    padding: 0.5rem 0.375rem !important; /* 8px top/bottom, 6px left/right */
+  }
+}
+
+/* Viewer prose styles */
+.tiptap-viewer .prose {
+  @apply text-text-primary max-w-none;
+}
+
+.tiptap-viewer .prose h1,
+.tiptap-viewer .prose h2,
+.tiptap-viewer .prose h3,
+.tiptap-viewer .prose h4,
+.tiptap-viewer .prose h5,
+.tiptap-viewer .prose h6 {
+  @apply font-bold text-text-primary mt-8 mb-4;
+}
+
+.tiptap-viewer .prose h1 {
+  @apply text-2xl;
+}
+.tiptap-viewer .prose h2 {
+  @apply text-xl;
+}
+.tiptap-viewer .prose h3 {
+  @apply text-lg;
+}
+
+.tiptap-viewer .prose p {
+  @apply mb-4 leading-relaxed text-text-primary;
+}
+
+.tiptap-viewer .prose blockquote {
+  @apply border-l-4 border-border-muted pl-4 italic text-text-secondary my-4;
+}
+
+.tiptap-viewer .prose ul,
+.tiptap-viewer .prose ol {
+  @apply mb-4 ml-6;
+}
+
+.tiptap-viewer .prose li {
+  @apply mb-2;
+}
+
+.tiptap-viewer .prose a {
+  @apply text-accent-blue hover:text-accent-blue-hover underline;
+}
+
+.tiptap-viewer .prose img {
+  @apply rounded-lg shadow-sm max-w-full h-auto my-4 cursor-pointer transition-transform duration-200;
+}
+
+.tiptap-viewer .prose img:hover {
+  @apply transform scale-105;
+}
+
+/* LightGallery styles */
+.tiptap-viewer .lg-backdrop {
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+.tiptap-viewer .lg-toolbar {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.tiptap-viewer .lg-counter {
+  color: white;
+  font-size: 16px;
+}
+
+.tiptap-viewer [data-lg-item] {
+  @apply inline-block;
+}
+
+/* Viewer code block styles */
+.tiptap-viewer .prose code {
+  @apply bg-background-secondary text-text-primary px-2 py-1 rounded text-sm;
+}
+
+.tiptap-viewer .prose pre {
+  @apply bg-background-secondary p-6 rounded-lg overflow-x-auto my-4;
+}
+
+.tiptap-viewer .prose pre code {
+  @apply bg-transparent p-0;
+}

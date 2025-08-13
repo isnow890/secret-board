@@ -1,0 +1,65 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    # 매일 오전 9시 (UTC 0시) - GitHub Actions cron은 UTC 기준
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Supabase Keepalive
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      run: |
+        echo "Running Supabase keepalive at $(date)"
+        npx tsx -e "
+        import { createClient } from '@supabase/supabase-js';
+        
+        const supabase = createClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        
+        async function keepalive() {
+          try {
+            const { data, error } = await supabase
+              .from('posts')
+              .select('id')
+              .limit(1)
+              .single();
+            
+            if (error && error.code !== 'PGRST116') {
+              throw error;
+            }
+            
+            console.log('✅ Supabase keepalive successful - hasData:', !!data);
+            console.log('Timestamp:', new Date().toISOString());
+          } catch (error) {
+            console.error('❌ Supabase keepalive failed:', error);
+            process.exit(1);
+          }
+        }
+        
+        keepalive();
+        "
+    
+    - name: Log completion
+      run: echo "Supabase keepalive completed at $(date)"

@@ -1,0 +1,28 @@
+version: "3.8"
+services:
+  hit-secret:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hit-secret
+    volumes:
+      - /home/ubuntu/workspace/apps/hit-secret/logs:/app/logs
+    ports:
+      - "3011:3000" # 외부:내부 포트 매핑
+    environment:
+      - NODE_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SITE_PASSWORD=${SITE_PASSWORD}
+      - TINY_API_KEY=${TINY_API_KEY}
+      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID}
+      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET}
+      - SERVER_API_KEY=${SERVER_API_KEY}
+    restart: unless-stopped
+
+    networks:
+      - infra-net
+
+networks:
+  infra-net:
+    external: true
