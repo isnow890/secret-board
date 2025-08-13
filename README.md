@@ -361,20 +361,20 @@ erDiagram
 
 광고(쿠팡 파트너스) 및 선택 기능을 모두 포함한 전체 변수 목록입니다. 실제로 필요 없는 항목은 제거하거나 비워도 됩니다.
 
-| 변수 | 구분 | 설명 | 예시 |
-|------|------|------|------|
-| SUPABASE_URL | 필수 | Supabase 프로젝트 URL | https://xxxx.supabase.co |
-| SUPABASE_ANON_KEY | 필수 | Supabase public anon key | eyJhbGciOiJI... |
-| SITE_PASSWORD | 필수 | 사이트 진입 보호 비밀번호 (전체 잠금) | mysecret |
-| SERVER_API_KEY | 필수 | 서버 내부 보호용 커스텀 키 (클라이언트 전송 금지) | random-long-key |
-| TINY_API_KEY | 선택 | 이미지 압축 / 에디터 처리 외부 서비스 키 | your_tiny_key |
-| NAVER_CLIENT_ID | 선택 | 네이버 API 사용 시 | xxxx |
-| NAVER_CLIENT_SECRET | 선택 | 네이버 API 시크릿 | yyyy |
-| AD_VISIBLE | 선택 | 전체 광고 on/off (true/false) | true |
-| AD_SIDEBAR_ENABLED | 선택 | 사이드바 광고 on/off | true |
-| AD_POST_DETAIL_ENABLED | 선택 | 게시글 상세 하단 광고 on/off | true |
-| COUPANG_SIDEBAR_AD_URL | 선택 | 쿠팡 파트너스 사이드바 위젯 URL | https://coupa.ng/abc123 |
-| COUPANG_POST_AD_URL | 선택 | 게시글 하단 쿠팡 광고 URL | https://coupa.ng/def456 |
+| 변수                   | 구분 | 설명                                              | 예시                     |
+| ---------------------- | ---- | ------------------------------------------------- | ------------------------ |
+| SUPABASE_URL           | 필수 | Supabase 프로젝트 URL                             | https://xxxx.supabase.co |
+| SUPABASE_ANON_KEY      | 필수 | Supabase public anon key                          | eyJhbGciOiJI...          |
+| SITE_PASSWORD          | 필수 | 사이트 진입 보호 비밀번호 (전체 잠금)             | mysecret                 |
+| SERVER_API_KEY         | 필수 | 서버 내부 보호용 커스텀 키 (클라이언트 전송 금지) | random-long-key          |
+| TINY_API_KEY           | 선택 | 이미지 압축 / 에디터 처리 외부 서비스 키          | your_tiny_key            |
+| NAVER_CLIENT_ID        | 선택 | 네이버 API 사용 시                                | xxxx                     |
+| NAVER_CLIENT_SECRET    | 선택 | 네이버 API 시크릿                                 | yyyy                     |
+| AD_VISIBLE             | 선택 | 전체 광고 on/off (true/false)                     | true                     |
+| AD_SIDEBAR_ENABLED     | 선택 | 사이드바 광고 on/off                              | true                     |
+| AD_POST_DETAIL_ENABLED | 선택 | 게시글 상세 하단 광고 on/off                      | true                     |
+| COUPANG_SIDEBAR_AD_URL | 선택 | 쿠팡 파트너스 사이드바 위젯 URL                   | https://coupa.ng/abc123  |
+| COUPANG_POST_AD_URL    | 선택 | 게시글 하단 쿠팡 광고 URL                         | https://coupa.ng/def456  |
 
 `.env.example` 파일을 복사하여 `.env` 생성 후 값 채워주세요. 광고를 완전히 비활성화하려면 `AD_VISIBLE=false` 로 설정하거나 관련 변수들을 제거하면 됩니다.
 
