@@ -10,7 +10,7 @@
  * @author Hit Secret Team
  */
 
-import { ref, readonly } from "vue";
+import { ref, readonly, onUnmounted } from "vue";
 import type {
   Post,
   PostSummary,
@@ -220,6 +220,12 @@ export const usePost = (postId: string) => {
   /** 에러 메시지 */
   const error = ref("");
 
+  /** 실시간 구독 상태 */
+  const realtimeChannel = ref<any>(null);
+
+  /** AI 요약 생성 중 상태 */
+  const aiSummaryGenerating = ref(false);
+
   // 좋아요 관리
   const {
     isLiked,
@@ -248,7 +254,22 @@ export const usePost = (postId: string) => {
         }
 
         await incrementViewCount();
-        return response.data as Post;
+        
+        // AI 요약 생성 중 상태 확인
+        const postData = response.data as Post;
+        if (!postData.ai_summary && postData.content) {
+          // HTML에서 텍스트 길이 확인
+          const textLength = postData.content.replace(/<[^>]*>/g, '').trim().length;
+          if (textLength >= 100) {
+            aiSummaryGenerating.value = true;
+            console.log('🤖 AI summary generation in progress...');
+          }
+        }
+        
+        // 게시글 로드 후 실시간 구독 설정
+        setupRealtimeSubscription();
+        
+        return postData;
       }
     } catch (fetchError: any) {
       console.error("게시글 조회 실패:", fetchError);
@@ -323,7 +344,17 @@ export const usePost = (postId: string) => {
       if (response?.success && response.data) {
         // 현재 post 상태 업데이트 (부분 업데이트 병합)
         if (post.value) {
-          post.value = { ...post.value, ...response.data } as Post;
+          const updatedPost = { ...post.value, ...response.data } as Post;
+          post.value = updatedPost;
+          
+          // 수정된 내용이 충분히 길면 AI 요약 재생성 중 상태 활성화
+          if (updatedPost.content) {
+            const textLength = updatedPost.content.replace(/<[^>]*>/g, '').trim().length;
+            if (textLength >= 100) {
+              aiSummaryGenerating.value = true;
+              console.log('🤖 AI summary regeneration in progress after edit...');
+            }
+          }
         }
 
         useToast().add({
@@ -387,6 +418,117 @@ export const usePost = (postId: string) => {
     }
   };
 
+  // 실시간 구독 설정 (AI 요약 업데이트 감지)
+  const setupRealtimeSubscription = () => {
+    if (!post.value || realtimeChannel.value) {
+      console.log('🔄 Realtime subscription setup skipped:', {
+        hasPost: !!post.value,
+        hasChannel: !!realtimeChannel.value,
+        postId
+      });
+      return;
+    }
+
+    const supabase = useSupabaseClient();
+    
+    console.log('🔄 Setting up realtime subscription for post:', postId);
+    console.log('📡 Supabase client ready:', !!supabase);
+    console.log('📄 Current post state:', {
+      id: post.value?.id,
+      hasAiSummary: !!post.value?.ai_summary,
+      aiSummaryGenerating: aiSummaryGenerating.value
+    });
+    
+    // AI 요약 업데이트를 위한 실시간 채널 생성
+    const channelName = `post-${postId}`;
+    console.log('📺 Creating channel:', channelName);
+    
+    realtimeChannel.value = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'posts',
+          filter: `id=eq.${postId}`,
+        },
+        (payload) => {
+          console.log('📡 Post updated via realtime:', {
+            event: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+            old: payload.old,
+            new: payload.new
+          });
+          
+          // AI 요약이 업데이트된 경우만 처리
+          if (payload.new && post.value) {
+            const newPost = payload.new as any;
+            const oldSummary = post.value.ai_summary;
+            const newSummary = newPost.ai_summary;
+            
+            console.log('📝 Summary comparison:', {
+              old: oldSummary,
+              new: newSummary,
+              changed: oldSummary !== newSummary
+            });
+            
+            // AI 요약이나 생성시간이 변경되었는지 확인
+            if (
+              (newPost.ai_summary !== post.value.ai_summary) ||
+              (newPost.summary_generated_at !== post.value.summary_generated_at)
+            ) {
+              console.log('✅ AI summary changed, updating post state');
+              
+              // post 상태 업데이트
+              post.value = {
+                ...post.value,
+                ai_summary: newPost.ai_summary,
+                summary_generated_at: newPost.summary_generated_at,
+              } as Post;
+              
+              console.log('📄 AI summary updated via realtime:', newPost.ai_summary);
+              
+              // AI 요약이 생성되면 생성 중 상태 해제
+              if (newPost.ai_summary) {
+                aiSummaryGenerating.value = false;
+                console.log('🤖 AI summary generation completed');
+                
+                // 토스트 알림 표시
+                useToast().add({
+                  title: 'AI 요약 완료',
+                  description: 'AI가 게시글 요약을 생성했습니다.',
+                  color: 'green'
+                });
+              }
+            } else {
+              console.log('📭 No AI summary changes detected');
+            }
+          } else {
+            console.log('⚠️ No payload.new or post.value missing');
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('📺 Realtime subscription status:', status);
+      });
+  };
+
+  // 실시간 구독 정리
+  const cleanupRealtimeSubscription = () => {
+    if (realtimeChannel.value) {
+      realtimeChannel.value.unsubscribe();
+      realtimeChannel.value = null;
+      console.log('Realtime subscription cleaned up');
+    }
+  };
+
+  // 컴포넌트가 언마운트될 때 정리
+  onUnmounted(() => {
+    cleanupRealtimeSubscription();
+  });
+
   return {
     // 상태
     post: post,
@@ -395,6 +537,7 @@ export const usePost = (postId: string) => {
     isLiked: readonly(isLiked),
     displayLikeCount: readonly(displayLikeCount),
     likePending: readonly(likePending),
+    aiSummaryGenerating: readonly(aiSummaryGenerating),
 
     // 메서드
     fetchPost,
@@ -402,5 +545,7 @@ export const usePost = (postId: string) => {
     editPost,
     deletePost,
     verifyPostPassword,
+    setupRealtimeSubscription,
+    cleanupRealtimeSubscription,
   };
 };

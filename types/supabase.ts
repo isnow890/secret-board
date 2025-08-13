@@ -126,6 +126,7 @@ export type Database = {
       };
       posts: {
         Row: {
+          ai_summary: string | null;
           attached_files: Json | null;
           attachment_count: number | null;
           comment_count: number | null;
@@ -141,11 +142,13 @@ export type Database = {
           password_hash: string;
           plain_text: string | null;
           preview: string | null;
+          summary_generated_at: string | null;
           title: string;
           updated_at: string | null;
           view_count: number | null;
         };
         Insert: {
+          ai_summary?: string | null;
           attached_files?: Json | null;
           attachment_count?: number | null;
           comment_count?: number | null;
@@ -161,11 +164,13 @@ export type Database = {
           password_hash: string;
           plain_text?: string | null;
           preview?: string | null;
+          summary_generated_at?: string | null;
           title: string;
           updated_at?: string | null;
           view_count?: number | null;
         };
         Update: {
+          ai_summary?: string | null;
           attached_files?: Json | null;
           attachment_count?: number | null;
           comment_count?: number | null;
@@ -181,6 +186,7 @@ export type Database = {
           password_hash?: string;
           plain_text?: string | null;
           preview?: string | null;
+          summary_generated_at?: string | null;
           title?: string;
           updated_at?: string | null;
           view_count?: number | null;

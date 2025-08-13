@@ -36,6 +36,10 @@ export interface Post {
   is_deleted?: boolean;
   /** 삭제 시간 */
   deleted_at?: string | null;
+  /** AI 생성 요약 */
+  ai_summary?: string | null;
+  /** 요약 생성 시간 */
+  summary_generated_at?: string | null;
   // API에서 추가되는 메타데이터 속성들
   /** 첨부파일 존재 여부 */
   hasAttachments?: boolean;

@@ -56,6 +56,7 @@
           :is-liked="isLiked"
           :display-like-count="displayLikeCount"
           :like-pending="likePending"
+          :ai-summary-generating="aiSummaryGenerating"
           @toggle-like="toggleLike"
         />
         
@@ -160,8 +161,11 @@ const {
   isLiked,
   displayLikeCount,
   likePending,
+  aiSummaryGenerating,
   fetchPost,
   toggleLike,
+  setupRealtimeSubscription,
+  cleanupRealtimeSubscription,
 } = usePost(postId);
 
 const refresh = fetchPost;

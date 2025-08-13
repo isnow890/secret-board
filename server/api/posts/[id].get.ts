@@ -43,7 +43,9 @@ export default defineEventHandler(async (event) => {
         created_at,
         updated_at,
         last_comment_at,
-        is_deleted
+        is_deleted,
+        ai_summary,
+        summary_generated_at
       `
       )
       .eq("id", postId)
@@ -70,8 +72,8 @@ export default defineEventHandler(async (event) => {
     const text =
       typeof post?.content === "string" ? stripHtml(post.content) : "";
     const preview = text.slice(0, 200);
-    const files = Array.isArray((post as any)?.attached_files)
-      ? (post as any).attached_files
+    const files = Array.isArray(post?.attached_files)
+      ? post.attached_files
       : [];
     const hasAttachments = files.length > 0;
     const attachmentCount = files.length;
@@ -81,7 +83,7 @@ export default defineEventHandler(async (event) => {
       ? {
           id: post.id,
           title: post.title,
-          nickname: (post as any).nickname,
+          nickname: post.nickname,
           content: post.content,
           view_count: post.view_count,
           like_count: post.like_count,
@@ -89,8 +91,10 @@ export default defineEventHandler(async (event) => {
           created_at: post.created_at,
           updated_at: post.updated_at,
           last_comment_at: post.last_comment_at,
-          attached_files: (post as any).attached_files ?? [],
-          is_deleted: (post as any).is_deleted || false,
+          attached_files: post.attached_files ?? [],
+          is_deleted: post.is_deleted || false,
+          ai_summary: post.ai_summary || null,
+          summary_generated_at: post.summary_generated_at || null,
           preview,
           hasAttachments,
           attachmentCount,

@@ -73,6 +73,10 @@ export default withApiKeyValidation(async (event) => {
       });
     }
 
+    // 백그라운드에서 AI 요약 생성 (non-awaitable)
+    console.log('🚀 [POST CREATE] Calling AI summary generation for post:', post.id);
+    generateAiSummaryInBackground(post.id, title.trim(), cleanContent);
+
     return {
       success: true,
       data: {
@@ -142,4 +146,111 @@ function sanitizeHtml(html: string): string {
   cleaned = cleaned.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, "");
 
   return cleaned;
+}
+
+// 백그라운드에서 AI 요약 생성하는 함수
+async function generateAiSummaryInBackground(postId: string, title: string, content: string) {
+  console.log(`🤖 [AI Summary] Starting background generation for post ${postId}`);
+  try {
+    // GoogleGenAI를 직접 사용하여 요약 생성
+    const { GoogleGenAI } = await import('@google/genai');
+    const { tiptapUtils } = await import('~/utils/htmlTextProcessor');
+    
+    const config = useRuntimeConfig();
+    const apiKey = config.googleAiStudioApiKey;
+    
+    if (!apiKey) {
+      console.warn('🤖 [AI Summary] Google AI Studio API key not configured, skipping AI summary');
+      return;
+    }
+    
+    console.log('🤖 [AI Summary] API key found, proceeding with text processing');
+
+    // HTML에서 순수 텍스트 추출
+    const textToProcess = tiptapUtils.extractPlainText(content);
+    console.log(`🤖 [AI Summary] Extracted text length: ${textToProcess.length}, content: ${textToProcess.substring(0, 100)}...`);
+    
+    // 100자 미만은 요약 생성 안함
+    if (textToProcess.trim().length < 100) {
+      console.log(`🤖 [AI Summary] Text too short (${textToProcess.trim().length} chars), skipping AI summary`);
+      return;
+    }
+
+    // AI 요약 생성
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const systemPrompt = `당신은 게시글을 간결하게 요약하는 전문가입니다.
+
+핵심 원칙:
+1. 게시글의 주요 내용과 핵심 메시지를 파악하여 간결하게 요약하세요
+2. 2-3문장으로 핵심 내용만 전달하세요 
+3. 개인정보나 민감한 정보는 제외하세요
+4. 객관적이고 중립적인 어조로 작성하세요
+5. 게시글의 주제와 논점을 명확히 드러내세요
+6. 불필요한 수식어나 감정 표현은 제거하세요
+
+요약 길이: 50-150자 내외
+어조: 객관적, 간결함`;
+
+    const userPrompt = `다음 게시글을 위의 원칙에 따라 간결하게 요약해주세요:
+
+제목: ${title}
+
+내용: ${textToProcess}`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: [{
+        role: 'user',
+        parts: [{
+          text: `${systemPrompt}\n\n${userPrompt}`
+        }]
+      }],
+      config: {
+        temperature: 0.3,
+        maxOutputTokens: 200,
+        candidateCount: 1,
+      }
+    });
+
+    const summary = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (summary) {
+      // DB에 요약 저장 (백그라운드 실행이므로 createClient 사용)
+      const { createClient } = await import('@supabase/supabase-js');
+      
+      // 백그라운드에서는 환경 변수를 직접 사용
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.NUXT_SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseServiceKey) {
+        console.error('🚨 [AI Summary] Missing Supabase credentials:', {
+          url: !!supabaseUrl,
+          serviceKey: !!supabaseServiceKey
+        });
+        return;
+      }
+      
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({
+          ai_summary: summary.length > 200 ? summary.substring(0, 197) + '...' : summary,
+          summary_generated_at: new Date().toISOString()
+        })
+        .eq('id', postId);
+
+      if (updateError) {
+        console.error('AI summary update error:', updateError);
+      } else {
+        console.log(`AI summary generated for post ${postId}: ${summary.substring(0, 50)}...`);
+      }
+    }
+  } catch (error: any) {
+    // 에러가 발생해도 로그만 남기고 무시 (graceful degradation)
+    console.error('🚨 [AI Summary] Background generation error:', error);
+    console.error('🚨 [AI Summary] Error stack:', error.stack);
+    console.error('🚨 [AI Summary] Error message:', error.message);
+  }
 }
