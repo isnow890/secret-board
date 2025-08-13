@@ -31,6 +31,18 @@
         resize="none"
         required
       />
+      
+      <!-- AI 말투 변경 버튼 -->
+      <div class="mt-2">
+        <AiReviseButton
+          v-model="form.content"
+          type="text"
+          :disabled="loading || !form.content.trim()"
+          @revise-start="handleAiReviseStart"
+          @revise-success="handleAiReviseSuccess"
+          @revise-error="handleAiReviseError"
+        />
+      </div>
 
       <!-- 닉네임과 비밀번호 섹션 -->
       <div class="space-y-3">
@@ -130,6 +142,7 @@ import {
   generateRandomNickname,
   validateNickname,
 } from "~/utils/nicknameGenerator";
+import AiReviseButton from "~/components/ai/AiReviseButton.vue";
 
 interface Props {
   postId: string;
@@ -369,6 +382,22 @@ watch(
   () => form.content,
   () => nextTick(() => autoResizeTextarea())
 );
+
+// AI 말투 변경 이벤트 핸들러
+const handleAiReviseStart = () => {
+  console.log('AI 말투 변경 시작');
+};
+
+const handleAiReviseSuccess = () => {
+  console.log('AI 말투 변경 완료');
+  // 텍스트 영역 자동 리사이즈
+  nextTick(() => autoResizeTextarea());
+};
+
+const handleAiReviseError = (error: string) => {
+  console.error('AI 말투 변경 실패:', error);
+  // 에러는 AiReviseButton에서 이미 토스트로 표시됨
+};
 
 // 자동 포커스 제거 - 사용자가 직접 클릭하여 포커스 하도록 개선
 </script>

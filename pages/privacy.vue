@@ -295,8 +295,8 @@
 <script setup lang="ts">
 // 페이지 메타 - 인증 미들웨어 제외
 definePageMeta({
-  layout: 'default',
-  auth: false
+  layout: false,
+  auth: false,
 });
 
 // 메타데이터 설정
@@ -313,7 +313,7 @@ useHead({
 });
 
 // 마지막 수정일
-const lastUpdated = "2024년 1월 1일";
+const lastUpdated = "2025년 8월 13일";
 </script>
 
 <style scoped>

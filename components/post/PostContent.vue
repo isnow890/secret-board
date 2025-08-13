@@ -15,26 +15,6 @@
     <!-- 본문 내용 (삭제되지 않은 경우만) -->
     <div v-else>
       <TiptapViewer :content="post.content" />
-      
-      <!-- 좋아요 버튼 (글 내용 바로 밑 왼쪽) -->
-      <div class="mt-6 pt-4">
-        <button
-          @click="$emit('toggleLike')"
-          :disabled="likePending"
-          class="flex items-center space-x-2 px-4 py-2 rounded-lg border-transparent transition-all duration-200 hover:bg-interactive-hover"
-          :class="[
-            isLiked ? 'text-red-500' : 'text-text-tertiary hover:text-red-500',
-            likePending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
-          ]"
-        >
-          <Icon
-            :name="isLiked ? 'mdi:heart' : 'mdi:heart-outline'"
-            class="w-5 h-5"
-            :class="[likePending ? 'animate-pulse' : '']"
-          />
-          <span class="font-medium">{{ formatNumber(displayLikeCount) }}</span>
-        </button>
-      </div>
     </div>
 
     <!-- 첨부파일 (삭제되지 않은 경우만) -->

@@ -22,6 +22,7 @@
     "logs:view-errors": "tail -f logs/error.log"
   },
   "dependencies": {
+    "@google/genai": "^1.13.0",
     "@nuxt/icon": "^1.15.0",
     "@nuxt/image": "^1.11.0",
     "@nuxtjs/supabase": "^1.6.0",

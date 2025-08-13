@@ -3,8 +3,9 @@
     <label
       v-if="label"
       :for="inputId"
-      class="block text-sm font-medium text-text-secondary mb-2"
+      class="block text-sm font-medium text-text-primary mb-2 flex items-center"
     >
+      <Icon v-if="labelIcon" :name="labelIcon" class="w-4 h-4 mr-2" />
       {{ label }}
       <span v-if="required" class="text-status-error ml-1">*</span>
     </label>
@@ -53,6 +54,7 @@ interface InputProps {
   modelValue?: string | number
   type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url' | 'search'
   label?: string
+  labelIcon?: string
   placeholder?: string
   hint?: string
   error?: string

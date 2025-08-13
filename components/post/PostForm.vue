@@ -6,6 +6,7 @@
       v-model="modelValue.title"
       type="text"
       label="제목"
+      label-icon="lucide:type"
       placeholder="제목을 입력하세요 (최소 3자)"
       :error="errors.title"
       :disabled="disabled"
@@ -28,8 +29,9 @@
 
     <!-- 내용 -->
     <div>
-      <label class="block text-sm font-medium text-text-primary mb-2">
-        내용 <span class="text-status-error">*</span>
+      <label class="block text-sm font-medium text-text-primary mb-2 flex items-center">
+        <Icon name="lucide:edit-3" class="w-4 h-4 mr-2" />
+        내용 <span class="text-status-error ml-1">*</span>
       </label>
       <ClientOnly>
         <TiptapEditor
@@ -59,6 +61,18 @@
         class="mt-1 text-sm text-green-500"
       >
         ✓ 내용 길이 조건 만족 ({{ contentTextLength }}자)
+      </div>
+      
+      <!-- AI 말투 변경 버튼 -->
+      <div class="mt-2">
+        <AiReviseButton
+          v-model="modelValue.content"
+          type="html"
+          :disabled="disabled || contentTextLength < 1"
+          @revise-start="handleAiReviseStart"
+          @revise-success="handleAiReviseSuccess"
+          @revise-error="handleAiReviseError"
+        />
       </div>
     </div>
 
@@ -162,7 +176,8 @@
 
     <!-- 파일 업로드 -->
     <div>
-      <label class="block text-sm font-medium text-text-primary mb-2">
+      <label class="block text-sm font-medium text-text-primary mb-2 flex items-center">
+        <Icon name="lucide:paperclip" class="w-4 h-4 mr-2" />
         첨부파일
       </label>
       <ClientOnly>
@@ -188,6 +203,7 @@ import type { CreatePostRequest, EditPostRequest } from "~/types";
 
 import TiptapEditor from "../editor/TiptapEditor.vue";
 import FileUploader from "../editor/FileUploader.vue";
+import AiReviseButton from "~/components/ai/AiReviseButton.vue";
 
 type PostFormData = CreatePostRequest | EditPostRequest;
 
@@ -219,4 +235,19 @@ const editAdUrl = computed(() => config.public.coupangPostAdUrl);
 const contentTextLength = computed(() => {
   return props.modelValue.content.replace(/<[^>]*>/g, "").trim().length;
 });
+
+// AI 말투 변경 이벤트 핸들러
+const handleAiReviseStart = () => {
+  console.log('AI 말투 변경 시작');
+};
+
+const handleAiReviseSuccess = () => {
+  console.log('AI 말투 변경 완료');
+  // HTML 콘텐츠가 변경되었으므로 반응성 업데이트가 자동으로 이루어짐
+};
+
+const handleAiReviseError = (error: string) => {
+  console.error('AI 말투 변경 실패:', error);
+  // 에러는 AiReviseButton에서 이미 토스트로 표시됨
+};
 </script>
