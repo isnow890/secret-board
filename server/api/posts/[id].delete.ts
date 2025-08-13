@@ -12,9 +12,13 @@ const deletePostSchema = z.object({
 
 export default withApiKeyValidation(async (event) => {
   try {
+    console.log('DELETE 요청 시작:', event.node.req.method, event.node.req.url)
+    
     // POST ID 추출
     const postId = getRouterParam(event, 'id')
+    console.log('추출된 postId:', postId)
     if (!postId) {
+      console.error('postId가 없음')
       throw createError({
         statusCode: 400,
         statusMessage: '게시글 ID가 필요합니다.'
@@ -23,6 +27,18 @@ export default withApiKeyValidation(async (event) => {
 
     // Query parameter에서 비밀번호 읽기
     const query = getQuery(event)
+    console.log('Query parameters:', query)
+    
+    try {
+      const { password } = deletePostSchema.parse(query)
+      console.log('비밀번호 파싱 성공, 길이:', password?.length)
+    } catch (parseError) {
+      console.error('비밀번호 파싱 실패:', parseError)
+      throw createError({
+        statusCode: 400,
+        statusMessage: '비밀번호가 필요합니다.'
+      })
+    }
     const { password } = deletePostSchema.parse(query)
 
     const supabase = await serverSupabaseClient<Database>(event)

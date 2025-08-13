@@ -9,6 +9,13 @@ export function validateApiKey(event: H3Event<EventHandlerRequest>): void {
   const apiKey = getHeader(event, 'x-api-key');
   const serverApiKey = process.env.SERVER_API_KEY;
 
+  console.log('API 키 검증:', {
+    receivedKey: apiKey,
+    expectedKey: serverApiKey,
+    method: event.node.req.method,
+    url: event.node.req.url
+  });
+
   if (!serverApiKey) {
     console.error('SERVER_API_KEY environment variable is not set');
     throw createError({
@@ -18,6 +25,7 @@ export function validateApiKey(event: H3Event<EventHandlerRequest>): void {
   }
 
   if (!apiKey) {
+    console.error('API 키가 없음');
     throw createError({
       statusCode: 401,
       statusMessage: 'API key required'
@@ -25,11 +33,14 @@ export function validateApiKey(event: H3Event<EventHandlerRequest>): void {
   }
 
   if (apiKey !== serverApiKey) {
+    console.error('잘못된 API 키:', { received: apiKey, expected: serverApiKey });
     throw createError({
       statusCode: 403,
       statusMessage: 'Invalid API key'
     });
   }
+  
+  console.log('API 키 검증 성공');
 }
 
 /**
