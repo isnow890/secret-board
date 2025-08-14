@@ -223,12 +223,16 @@ const touchEnd = ref({ x: 0, y: 0 })
 
 const handleTouchStart = (event: TouchEvent) => {
   const touch = event.touches[0]
-  touchStart.value = { x: touch.clientX, y: touch.clientY }
+  if (touch) {
+    touchStart.value = { x: touch.clientX, y: touch.clientY }
+  }
 }
 
 const handleTouchMove = (event: TouchEvent) => {
   const touch = event.touches[0]
-  touchEnd.value = { x: touch.clientX, y: touch.clientY }
+  if (touch) {
+    touchEnd.value = { x: touch.clientX, y: touch.clientY }
+  }
 }
 
 const handleTouchEnd = () => {

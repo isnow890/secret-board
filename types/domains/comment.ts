@@ -104,4 +104,6 @@ export interface RecentComment {
   created_at: string;
   /** 게시글 작성자인지 여부 */
   is_author: boolean;
+  /** 댓글 깊이 (대댓글 레벨) */
+  depth: number;
 }

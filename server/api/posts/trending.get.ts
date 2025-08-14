@@ -9,7 +9,7 @@
  */
 import { serverSupabaseClient } from "#supabase/server";
 import type { Database } from "~/types/supabase";
-import { stripHtml } from "~/server/utils/textUtils";
+import { stripHtml } from "~/server/utils";
 
 export default defineEventHandler(async (event) => {
   try {

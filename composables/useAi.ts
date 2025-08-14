@@ -46,7 +46,7 @@ export const useAi = () => {
    */
   const reviseText = async (options: AiReviseOptions): Promise<AiReviseResponse> => {
     try {
-      const response = await $fetch<AiReviseResponse>('/api/ai/revise-text', {
+      const response = (await $fetch('/api/ai/revise-text', {
         method: 'POST',
         body: {
           text: options.text,
@@ -54,7 +54,7 @@ export const useAi = () => {
           preserveMedia: options.preserveMedia || false,
           persona: options.persona || 'neutral',
         },
-      });
+      })) as AiReviseResponse;
 
       return response;
     } catch (error: any) {

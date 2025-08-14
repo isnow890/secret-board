@@ -66,3 +66,68 @@ export interface RequestOptions {
   /** 타임아웃 시간 (ms) */
   timeout?: number;
 }
+
+// 게시글 API 응답 타입들
+
+/**
+ * 게시글 목록 조회 응답 타입
+ */
+export interface PostListResponse {
+  posts: import('./post').PostSummary[];
+  pagination: PaginationInfo;
+}
+
+/**
+ * 게시글 상세 조회 응답 타입
+ */
+export type PostDetailResponse = import('./post').Post;
+
+/**
+ * 게시글 작성 응답 타입
+ */
+export type PostCreateResponse = import('./post').Post;
+
+/**
+ * 게시글 수정 응답 타입
+ */
+export type PostEditResponse = import('./post').Post;
+
+/**
+ * 게시글 삭제 응답 타입
+ */
+export interface PostDeleteResponse {
+  deletedImages: number;
+  deletedAttachments: number;
+}
+
+/**
+ * 게시글 비밀번호 확인 응답 타입
+ */
+export interface PostPasswordVerifyResponse {
+  valid: boolean;
+}
+
+/**
+ * 조회수 증가 응답 타입
+ */
+export interface PostViewResponse {
+  message: string;
+}
+
+// 댓글 API 응답 타입들
+
+/**
+ * 댓글 목록 조회 응답 타입
+ */
+export interface CommentListResponse {
+  comments: import('./comment').Comment[];
+  total_count: number;
+}
+
+/**
+ * 좋아요 응답 타입
+ */
+export interface LikeResponse {
+  like_count: number;
+  is_liked: boolean;
+}

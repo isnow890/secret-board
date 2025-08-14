@@ -218,6 +218,7 @@ export const useUtils = () => {
     highlightSearch,
     isValidUrl,
     validateEmail,
+    isValidEmail: validateEmail, // 별칭 추가
     checkPasswordStrength,
     copyToClipboard,
     debounce,

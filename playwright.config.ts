@@ -9,7 +9,7 @@ export default defineConfig({
   reporter: "html",
 
   use: {
-    baseURL: "http://localhost:3001/secret",
+    baseURL: "http://localhost:3007/secret",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

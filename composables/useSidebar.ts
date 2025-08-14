@@ -11,7 +11,7 @@ export const useSidebar = () => {
    */
   const fetchRecentComments = async (limit: number = 5): Promise<RecentComment[]> => {
     try {
-      const response = await $fetch<ApiResponse<{ comments: RecentComment[] }>>(`/api/comments/recent?limit=${limit}`);
+      const response = (await $fetch(`/api/comments/recent?limit=${limit}`)) as ApiResponse<{ comments: RecentComment[] }>;
       return response?.success ? response.data?.comments || [] : [];
     } catch (error) {
       console.error("최근 댓글 조회 실패:", error);
@@ -25,7 +25,7 @@ export const useSidebar = () => {
    */
   const fetchBoardStats = async (): Promise<BoardStats | null> => {
     try {
-      const response = await $fetch<ApiResponse<BoardStats>>("/api/stats/board");
+      const response = (await $fetch("/api/stats/board")) as ApiResponse<BoardStats>;
       return response?.success ? response.data : null;
     } catch (error) {
       console.error("게시판 통계 조회 실패:", error);

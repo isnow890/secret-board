@@ -379,7 +379,7 @@ test.describe('Post Detail and Comments Flow', () => {
 
     test('should show comment depth limits', async ({ page }) => {
       // Mock deeply nested comments (test depth limit of 10)
-      const deepComments = []
+      const deepComments: any[] = []
       let currentParentId = 'comment-1'
       
       for (let i = 0; i < 12; i++) {

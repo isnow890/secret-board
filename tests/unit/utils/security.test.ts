@@ -63,7 +63,8 @@ const generateSafeFilename = (originalName: string): string => {
   let ext = 'txt'
   
   if (parts.length > 1) {
-    ext = parts[parts.length - 1].replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+    const lastPart = parts[parts.length - 1]
+    ext = lastPart ? lastPart.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() : 'txt'
   }
   
   return `file_${timestamp}_${random}.${ext || 'txt'}`

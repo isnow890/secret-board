@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Mock FormData
-global.FormData = class MockFormData {
+class MockFormData {
   private data: Map<string, any> = new Map()
   
   append(key: string, value: any) {
@@ -16,10 +16,46 @@ global.FormData = class MockFormData {
   has(key: string) {
     return this.data.has(key)
   }
+  
+  delete(key: string) {
+    return this.data.delete(key)
+  }
+  
+  getAll(key: string) {
+    return [this.data.get(key)].filter(Boolean)
+  }
+  
+  set(key: string, value: any) {
+    this.data.set(key, value)
+  }
+  
+  forEach(callback: (value: any, key: string) => void) {
+    this.data.forEach(callback)
+  }
+  
+  entries() {
+    return this.data.entries()
+  }
+  
+  keys() {
+    return this.data.keys()
+  }
+  
+  values() {
+    return this.data.values()
+  }
+  
+  [Symbol.iterator]() {
+    return this.data.entries()
+  }
 }
 
+global.FormData = MockFormData as any
+
 // Mock fetch
-const mockFetch = vi.fn()
+const mockFetch = vi.fn() as any
+mockFetch.raw = vi.fn()
+mockFetch.create = vi.fn()
 global.$fetch = mockFetch
 
 describe('Image Upload API', () => {

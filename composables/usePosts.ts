@@ -20,6 +20,31 @@ import type {
   ApiResponse,
 } from "~/types";
 
+// 게시글 API 응답 타입 정의
+type PostListResponse = ApiResponse<{
+  posts: PostSummary[];
+  pagination: PaginationInfo;
+}>;
+
+type PostDetailResponse = ApiResponse<Post>;
+
+type PostCreateResponse = ApiResponse<Post>;
+
+type PostEditResponse = ApiResponse<Post>;
+
+type PostDeleteResponse = ApiResponse<{
+  deletedImages: number;
+  deletedAttachments: number;
+}>;
+
+type PostPasswordVerifyResponse = ApiResponse<{
+  valid: boolean;
+}>;
+
+type PostViewResponse = ApiResponse<{
+  message: string;
+}>;
+
 /**
  * 게시글 목록 관리를 위한 컴포저블
  * 무한 스크롤과 페이지네이션을 지원
@@ -77,10 +102,7 @@ export const usePosts = () => {
     try {
       const response = (await $fetch(
         `/api/posts?${queryParams}`
-      )) as ApiResponse<{
-        posts: PostSummary[];
-        pagination: PaginationInfo;
-      }>;
+      )) as PostListResponse;
 
       if (response?.success && response.data) {
         const newPosts = response.data.posts;
@@ -102,10 +124,10 @@ export const usePosts = () => {
     postData: CreatePostRequest
   ): Promise<Post | undefined> => {
     try {
-      const response = await $fetch("/api/posts", {
+      const response = (await $fetch("/api/posts", {
         method: "POST",
         body: postData,
-      });
+      })) as PostCreateResponse;
 
       if (response?.success && response.data) {
         useToast().add({
@@ -131,7 +153,9 @@ export const usePosts = () => {
   const fetchMostViewedPosts = async (
     limit: number = 5
   ): Promise<PostSummary[]> => {
-    const response = await $fetch(`/api/posts?sort=views&limit=${limit}`);
+    const response = (await $fetch(
+      `/api/posts?sort=views&limit=${limit}`
+    )) as PostListResponse;
 
     if (response?.success && response.data) {
       return response.data.posts as PostSummary[];
@@ -143,7 +167,9 @@ export const usePosts = () => {
   const fetchPopularPosts = async (
     limit: number = 5
   ): Promise<PostSummary[]> => {
-    const response = await $fetch(`/api/posts/trending?limit=${limit}`);
+    const response = (await $fetch(
+      `/api/posts/trending?limit=${limit}`
+    )) as PostListResponse;
 
     if (response?.success && response.data) {
       return response.data.posts as PostSummary[];
@@ -170,7 +196,9 @@ export const usePosts = () => {
       queryParams.append("search", params.search.trim());
     }
 
-    const response = await $fetch(`/api/posts?${queryParams}`);
+    const response = (await $fetch(
+      `/api/posts?${queryParams}`
+    )) as PostListResponse;
 
     if (response?.success && response.data) {
       return {
@@ -241,7 +269,7 @@ export const usePost = (postId: string) => {
       loading.value = true;
       const response = (await $fetch(
         `/api/posts/${postId}`
-      )) as ApiResponse<Post>;
+      )) as PostDetailResponse;
 
       if (response?.success && response.data) {
         post.value = response.data as Post;
@@ -340,10 +368,10 @@ export const usePost = (postId: string) => {
     editData: EditPostRequest
   ): Promise<Post | undefined> => {
     try {
-      const response = await $fetch(`/api/posts/${postId}/edit`, {
+      const response = (await $fetch(`/api/posts/${postId}/edit`, {
         method: "POST",
         body: editData,
-      });
+      })) as PostEditResponse;
 
       if (response?.success && response.data) {
         // 현재 post 상태 업데이트 (부분 업데이트 병합)
@@ -397,15 +425,12 @@ export const usePost = (postId: string) => {
   // 게시글 삭제
   const deletePost = async (password: string): Promise<boolean> => {
     try {
-      const response = (await $fetch(`/api/posts/${postId}`, {
-        method: "DELETE",
+      const response = (await $fetch(`/api/posts/${postId}/delete`, {
+        method: "POST",
         body: {
           password: password,
         },
-      })) as ApiResponse<{
-        deletedImages: number;
-        deletedAttachments: number;
-      }>;
+      })) as PostDeleteResponse;
 
       if (response?.success) {
         const deletedImages = response.data?.deletedImages;
@@ -429,10 +454,10 @@ export const usePost = (postId: string) => {
   // 게시글 비밀번호 확인
   const verifyPostPassword = async (password: string): Promise<boolean> => {
     try {
-      const response = await $fetch(`/api/posts/${postId}/verify`, {
+      const response = (await $fetch(`/api/posts/${postId}/verify`, {
         method: "POST",
         body: { password },
-      });
+      })) as PostPasswordVerifyResponse;
 
       return response.success as boolean;
     } catch (err: any) {

@@ -47,6 +47,8 @@ export interface BoardStats {
   todayPosts: number;
   /** 오늘 작성된 댓글 수 */
   todayComments: number;
+  /** 마지막 업데이트 시간 */
+  lastUpdated: string;
 }
 
 /**

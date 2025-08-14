@@ -1,5 +1,6 @@
 // server/utils/apiKeyValidation.ts
 import type { EventHandlerRequest, H3Event } from 'h3';
+import { getHeader, createError, defineEventHandler } from 'h3';
 
 /**
  * API 키 검증 미들웨어

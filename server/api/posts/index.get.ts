@@ -8,7 +8,7 @@
  */
 import { serverSupabaseClient } from "#supabase/server";
 import type { Database } from "~/types/supabase";
-import { stripHtml } from "~/server/utils/textUtils";
+import { stripHtml } from "~/server/utils";
 import { logApiCall, logError } from "~/utils/logger";
 
 export default defineEventHandler(async (event) => {
