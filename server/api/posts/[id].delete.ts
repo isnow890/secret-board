@@ -25,12 +25,12 @@ export default withApiKeyValidation(async (event) => {
       })
     }
 
-    // Query parameter에서 비밀번호 읽기
-    const query = getQuery(event)
-    console.log('Query parameters:', query)
+    // 요청 본문에서 비밀번호 읽기
+    const body = await readBody(event)
+    console.log('요청 본문 수신:', { hasPassword: !!body?.password })
     
     try {
-      const { password } = deletePostSchema.parse(query)
+      const { password } = deletePostSchema.parse(body)
       console.log('비밀번호 파싱 성공, 길이:', password?.length)
     } catch (parseError) {
       console.error('비밀번호 파싱 실패:', parseError)
@@ -39,7 +39,7 @@ export default withApiKeyValidation(async (event) => {
         statusMessage: '비밀번호가 필요합니다.'
       })
     }
-    const { password } = deletePostSchema.parse(query)
+    const { password } = deletePostSchema.parse(body)
 
     const supabase = await serverSupabaseClient<Database>(event)
 
