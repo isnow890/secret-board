@@ -8,7 +8,7 @@ import { withApiKeyValidation } from "~/server/utils/apiKeyValidation";
 const editPostSchema = z.object({
   title: z
     .string()
-    .min(5, "제목은 5자 이상이어야 합니다")
+    .min(3, "제목은 3자 이상이어야 합니다")
     .max(255, "제목은 255자 이하여야 합니다"),
   content: z
     .string()
@@ -164,7 +164,14 @@ export default withApiKeyValidation(async (event) => {
     }
 
     // 백그라운드에서 AI 요약 재생성 (non-awaitable)
+    console.log(
+      "🚀 [POST EDIT] Calling AI summary generation for post:",
+      updatedPost.id
+    );
     generateAiSummaryInBackground(updatedPost.id, title.trim(), cleanContent);
+
+    // UTF-8 인코딩 명시적 설정
+    setHeader(event, "Content-Type", "application/json; charset=utf-8");
 
     return {
       success: true,
@@ -230,30 +237,47 @@ async function generateAiSummaryInBackground(
   title: string,
   content: string
 ) {
+  console.log(
+    `🤖 [AI Summary EDIT] Starting background generation for post ${postId}`
+  );
   try {
     // GoogleGenAI를 직접 사용하여 요약 생성
+    console.log("🤖 [AI Summary EDIT] Importing modules...");
     const { GoogleGenAI } = await import("@google/genai");
     const { tiptapUtils } = await import("~/utils/htmlTextProcessor");
 
-    const config = useRuntimeConfig();
-    const apiKey = config.googleAiStudioApiKey;
+    console.log("🤖 [AI Summary EDIT] Getting API key...");
+    const apiKey = process.env.GOOGLE_AI_STUDIO_API_KEY;
+    console.log("🤖 [AI Summary EDIT] API key status:", !!apiKey);
 
     if (!apiKey) {
       console.warn(
-        "Google AI Studio API key not configured, skipping AI summary"
+        "🤖 [AI Summary EDIT] Google AI Studio API key not configured, skipping AI summary"
       );
       return;
     }
 
     // HTML에서 순수 텍스트 추출
+    console.log("🤖 [AI Summary EDIT] Extracting text from content...");
     const textToProcess = tiptapUtils.extractPlainText(content);
+    console.log(
+      `🤖 [AI Summary EDIT] Extracted text length: ${
+        textToProcess.length
+      }, preview: ${textToProcess.substring(0, 100)}...`
+    );
 
     // 100자 미만은 요약 생성 안함
     if (textToProcess.trim().length < 100) {
+      console.log(
+        `🤖 [AI Summary EDIT] Text too short (${
+          textToProcess.trim().length
+        } chars), skipping AI summary`
+      );
       return;
     }
 
     // AI 요약 생성
+    console.log("🤖 [AI Summary EDIT] Creating GoogleGenAI instance...");
     const ai = new GoogleGenAI({ apiKey });
 
     const systemPrompt = `당신은 게시글을 간결하게 요약하는 전문가입니다.
@@ -275,6 +299,13 @@ async function generateAiSummaryInBackground(
 
 내용: ${textToProcess}`;
 
+    console.log("🤖 [AI Summary EDIT] Making API call to Google AI...");
+    console.log(
+      "🤖 [AI Summary EDIT] Prompt length:",
+      `${systemPrompt}\n\n${userPrompt}`.length
+    );
+
+    const apiCallStartTime = Date.now();
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
@@ -289,47 +320,153 @@ async function generateAiSummaryInBackground(
       ],
       config: {
         temperature: 0.3,
-        maxOutputTokens: 200,
+        maxOutputTokens: 8192, // Very generous token allocation since it's free
         candidateCount: 1,
       },
     });
+    const apiCallEndTime = Date.now();
+
+    console.log(
+      `🤖 [AI Summary EDIT] API call completed in ${
+        apiCallEndTime - apiCallStartTime
+      }ms`
+    );
+    console.log(
+      "🤖 [AI Summary EDIT] Full response object:",
+      JSON.stringify(response, null, 2)
+    );
+    console.log("🤖 [AI Summary EDIT] Response structure:", {
+      candidatesLength: response.candidates?.length,
+      hasContent: !!response.candidates?.[0]?.content,
+      hasPartsArray: !!response.candidates?.[0]?.content?.parts,
+      partsLength: response.candidates?.[0]?.content?.parts?.length,
+      firstPartHasText: !!response.candidates?.[0]?.content?.parts?.[0]?.text,
+    });
 
     const summary = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    console.log("🤖 [AI Summary EDIT] Raw summary:", summary);
+    console.log("🤖 [AI Summary EDIT] Summary length:", summary?.length || 0);
 
     if (summary) {
+      console.log(
+        `🤖 [AI Summary EDIT] AI summary generated for post ${postId}: "${summary.substring(
+          0,
+          100
+        )}..."`
+      );
+
       // DB에 요약 저장 (백그라운드 실행이므로 createClient 사용)
+      console.log("🤖 [AI Summary EDIT] Preparing database update...");
       const { createClient } = await import("@supabase/supabase-js");
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.NUXT_SUPABASE_SERVICE_KEY;
-      
+      const supabaseUrl =
+        process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL;
+      const supabaseServiceKey =
+        process.env.SUPABASE_SERVICE_KEY ||
+        process.env.NUXT_SUPABASE_SERVICE_KEY ||
+        process.env.SUPABASE_ANON_KEY; // Fallback to anon key for development
+
+      console.log("🤖 [AI Summary EDIT] Environment variables status:", {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasServiceKey: !!supabaseServiceKey,
+        supabaseUrlLength: supabaseUrl?.length || 0,
+        serviceKeyLength: supabaseServiceKey?.length || 0,
+      });
+
       if (!supabaseUrl || !supabaseServiceKey) {
-        throw new Error("Supabase credentials not configured");
+        console.error(
+          "🤖 [AI Summary EDIT] Supabase credentials not configured for AI summary update"
+        );
+        return;
       }
-      
+
+      console.log("🤖 [AI Summary EDIT] Creating Supabase client...");
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-      const { error: updateError } = await supabase
+      const finalSummary =
+        summary.length > 200 ? summary.substring(0, 197) + "..." : summary;
+      const updatePayload = {
+        ai_summary: finalSummary,
+        summary_generated_at: new Date().toISOString(),
+      };
+
+      console.log(
+        "🤖 [AI Summary EDIT] Updating database with payload:",
+        updatePayload
+      );
+      console.log("🤖 [AI Summary EDIT] Updating post ID:", postId);
+
+      const updateStartTime = Date.now();
+      const { data: updateData, error: updateError } = await supabase
         .from("posts")
-        .update({
-          ai_summary:
-            summary.length > 200 ? summary.substring(0, 197) + "..." : summary,
-          summary_generated_at: new Date().toISOString(),
-        })
-        .eq("id", postId);
+        .update(updatePayload)
+        .eq("id", postId)
+        .select();
+      const updateEndTime = Date.now();
+
+      console.log(
+        `🤖 [AI Summary EDIT] Database update completed in ${
+          updateEndTime - updateStartTime
+        }ms`
+      );
+      console.log("🤖 [AI Summary EDIT] Update result:", {
+        data: updateData,
+        error: updateError,
+      });
 
       if (updateError) {
-        console.error("AI summary update error:", updateError);
+        console.error(
+          "🤖 [AI Summary EDIT] AI summary update error:",
+          JSON.stringify(updateError, null, 2)
+        );
       } else {
         console.log(
-          `AI summary updated for post ${postId}: ${summary.substring(
+          `🤖 [AI Summary EDIT] AI summary successfully updated for post ${postId}: ${summary.substring(
             0,
             50
           )}...`
         );
+        console.log(
+          "🤖 [AI Summary EDIT] Updated rows count:",
+          updateData?.length || 0
+        );
       }
+    } else {
+      console.warn(
+        "🤖 [AI Summary EDIT] No summary generated - empty response from AI"
+      );
     }
   } catch (error) {
     // 에러가 발생해도 로그만 남기고 무시 (graceful degradation)
-    console.error("Background AI summary generation error:", error);
+    const errAny = error as any;
+    const errObj =
+      typeof errAny === "object" && errAny !== null
+        ? (errAny as Record<string, any>)
+        : undefined;
+
+    let fullError: string;
+    try {
+      fullError = JSON.stringify(
+        errObj ?? { message: String(errAny) },
+        errObj ? Object.getOwnPropertyNames(errObj) : undefined,
+        2
+      );
+    } catch {
+      fullError = String(errAny);
+    }
+
+    console.error(
+      "🤖 [AI Summary EDIT] Background AI summary generation error:",
+      {
+        postId,
+        errorType: errAny?.constructor?.name || typeof errAny,
+        errorMessage: errAny instanceof Error ? errAny.message : String(errAny),
+        errorStack: errAny instanceof Error ? errAny.stack : undefined,
+        // Google Gen AI SDK specific error properties
+        apiErrorStatus: errObj?.status,
+        apiErrorName: errObj?.name,
+        // Additional error details
+        fullError,
+      }
+    );
   }
 }

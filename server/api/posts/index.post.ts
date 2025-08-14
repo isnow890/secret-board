@@ -2,8 +2,8 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { serverSupabaseClient } from "#supabase/server";
-import type { Database } from '~/types/supabase';
-import { withApiKeyValidation } from '~/server/utils/apiKeyValidation';
+import type { Database } from "~/types/supabase";
+import { withApiKeyValidation } from "~/server/utils/apiKeyValidation";
 
 const createPostSchema = z.object({
   title: z
@@ -18,7 +18,10 @@ const createPostSchema = z.object({
     .string()
     .min(1, "닉네임을 입력해주세요")
     .max(15, "닉네임은 15자 이하여야 합니다")
-    .regex(/^[가-힣a-zA-Z0-9\s]+$/, "닉네임은 한글, 영문, 숫자만 사용할 수 있습니다"),
+    .regex(
+      /^[가-힣a-zA-Z0-9\s]+$/,
+      "닉네임은 한글, 영문, 숫자만 사용할 수 있습니다"
+    ),
   password: z
     .string()
     .length(4, "비밀번호는 4자리여야 합니다")
@@ -60,7 +63,8 @@ export default withApiKeyValidation(async (event) => {
         plain_text: plainText,
         nickname: nickname.trim(),
         password_hash: passwordHash,
-        attached_files: attachedFiles && attachedFiles.length > 0 ? attachedFiles : null,
+        attached_files:
+          attachedFiles && attachedFiles.length > 0 ? attachedFiles : null,
       })
       .select()
       .single();
@@ -74,7 +78,10 @@ export default withApiKeyValidation(async (event) => {
     }
 
     // 백그라운드에서 AI 요약 생성 (non-awaitable)
-    console.log('🚀 [POST CREATE] Calling AI summary generation for post:', post.id);
+    console.log(
+      "🚀 [POST CREATE] Calling AI summary generation for post:",
+      post.id
+    );
     generateAiSummaryInBackground(post.id, title.trim(), cleanContent);
 
     return {
@@ -105,7 +112,7 @@ export default withApiKeyValidation(async (event) => {
       statusMessage: "서버 오류가 발생했습니다.",
     });
   }
-}); 
+});
 
 // 간단한 HTML 정리 함수 (서버사이드)
 function sanitizeHtml(html: string): string {
@@ -149,36 +156,55 @@ function sanitizeHtml(html: string): string {
 }
 
 // 백그라운드에서 AI 요약 생성하는 함수
-async function generateAiSummaryInBackground(postId: string, title: string, content: string) {
-  console.log(`🤖 [AI Summary] Starting background generation for post ${postId}`);
+async function generateAiSummaryInBackground(
+  postId: string,
+  title: string,
+  content: string
+) {
+  console.log(
+    `🤖 [AI Summary] Starting background generation for post ${postId}`
+  );
   try {
     // GoogleGenAI를 직접 사용하여 요약 생성
-    const { GoogleGenAI } = await import('@google/genai');
-    const { tiptapUtils } = await import('~/utils/htmlTextProcessor');
-    
-    const config = useRuntimeConfig();
-    const apiKey = config.googleAiStudioApiKey;
-    
+    const { GoogleGenAI } = await import("@google/genai");
+    const { tiptapUtils } = await import("~/utils/htmlTextProcessor");
+
+    const apiKey = process.env.GOOGLE_AI_STUDIO_API_KEY;
+
     if (!apiKey) {
-      console.warn('🤖 [AI Summary] Google AI Studio API key not configured, skipping AI summary');
+      console.warn(
+        "🤖 [AI Summary] Google AI Studio API key not configured, skipping AI summary"
+      );
       return;
     }
-    
-    console.log('🤖 [AI Summary] API key found, proceeding with text processing');
+
+    console.log(
+      "🤖 [AI Summary] API key found, proceeding with text processing"
+    );
 
     // HTML에서 순수 텍스트 추출
     const textToProcess = tiptapUtils.extractPlainText(content);
-    console.log(`🤖 [AI Summary] Extracted text length: ${textToProcess.length}, content: ${textToProcess.substring(0, 100)}...`);
-    
+    console.log(
+      `🤖 [AI Summary] Extracted text length: ${
+        textToProcess.length
+      }, content: ${textToProcess.substring(0, 100)}...`
+    );
+
     // 100자 미만은 요약 생성 안함
     if (textToProcess.trim().length < 100) {
-      console.log(`🤖 [AI Summary] Text too short (${textToProcess.trim().length} chars), skipping AI summary`);
+      console.log(
+        `🤖 [AI Summary] Text too short (${
+          textToProcess.trim().length
+        } chars), skipping AI summary`
+      );
       return;
     }
 
     // AI 요약 생성
+    console.log("🤖 [AI Summary] Initializing GoogleGenAI...");
     const ai = new GoogleGenAI({ apiKey });
-    
+    console.log("🤖 [AI Summary] GoogleGenAI initialized successfully");
+
     const systemPrompt = `당신은 게시글을 간결하게 요약하는 전문가입니다.
 
 핵심 원칙:
@@ -198,59 +224,115 @@ async function generateAiSummaryInBackground(postId: string, title: string, cont
 
 내용: ${textToProcess}`;
 
+    console.log("🤖 [AI Summary] Calling GoogleGenAI API...");
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: `${systemPrompt}\n\n${userPrompt}`
-        }]
-      }],
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `${systemPrompt}\n\n${userPrompt}`,
+            },
+          ],
+        },
+      ],
       config: {
         temperature: 0.3,
-        maxOutputTokens: 200,
+        maxOutputTokens: 1000,
         candidateCount: 1,
-      }
+      },
     });
 
-    const summary = response.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    console.log("🤖 [AI Summary] API call completed, processing response...");
+    console.log("🤖 [AI Summary] Response structure:", {
+      hasCandidates: !!response.candidates,
+      candidatesLength: response.candidates?.length,
+      hasText: !!(response as any).text,
+      responseKeys: Object.keys(response || {}),
+      firstCandidate: response.candidates?.[0]
+    });
+    
+    let summary = null;
+    
+    try {
+      // 최신 Google GenAI API 응답 구조 확인 (실제 응답 구조 기반)
+      if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+        summary = response.candidates[0].content.parts[0].text;
+        console.log("🤖 [AI Summary] Extracted from candidates.content.parts[0].text");
+      }
+      // 직접 text 속성 확인
+      else if ((response as any).text) {
+        summary = (response as any).text;
+        console.log("🤖 [AI Summary] Extracted from response.text");
+      }
+      
+      if (summary) {
+        summary = summary.trim();
+        console.log("🤖 [AI Summary] Final summary extracted:", summary.substring(0, 100) + "...");
+      } else {
+        console.log("🤖 [AI Summary] No summary found in any expected location");
+        console.log("🤖 [AI Summary] Full response:", JSON.stringify(response, null, 2));
+      }
+    } catch (parseError) {
+      console.error("🚨 [AI Summary] Error parsing response:", parseError);
+      console.log("🤖 [AI Summary] Full response on error:", JSON.stringify(response, null, 2));
+    }
+    
+    console.log(`🤖 [AI Summary] Generated summary: ${summary?.substring(0, 100)}...`);
 
     if (summary) {
       // DB에 요약 저장 (백그라운드 실행이므로 createClient 사용)
-      const { createClient } = await import('@supabase/supabase-js');
-      
+      const { createClient } = await import("@supabase/supabase-js");
+
       // 백그라운드에서는 환경 변수를 직접 사용
-      const supabaseUrl = process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || process.env.NUXT_SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-      
+      const supabaseUrl =
+        process.env.SUPABASE_URL || process.env.NUXT_SUPABASE_URL;
+      const supabaseServiceKey =
+        process.env.SUPABASE_SERVICE_KEY ||
+        process.env.NUXT_SUPABASE_SERVICE_KEY ||
+        process.env.SUPABASE_ANON_KEY;
+
       if (!supabaseUrl || !supabaseServiceKey) {
-        console.error('🚨 [AI Summary] Missing Supabase credentials:', {
+        console.error("🚨 [AI Summary] Missing Supabase credentials:", {
           url: !!supabaseUrl,
-          serviceKey: !!supabaseServiceKey
+          serviceKey: !!supabaseServiceKey,
         });
         return;
       }
-      
+
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
+
       const { error: updateError } = await supabase
-        .from('posts')
+        .from("posts")
         .update({
-          ai_summary: summary.length > 200 ? summary.substring(0, 197) + '...' : summary,
-          summary_generated_at: new Date().toISOString()
+          ai_summary:
+            summary.length > 200 ? summary.substring(0, 197) + "..." : summary,
+          summary_generated_at: new Date().toISOString(),
         })
-        .eq('id', postId);
+        .eq("id", postId);
 
       if (updateError) {
-        console.error('AI summary update error:', updateError);
+        console.error("AI summary update error:", updateError);
       } else {
-        console.log(`AI summary generated for post ${postId}: ${summary.substring(0, 50)}...`);
+        console.log(
+          `AI summary generated for post ${postId}: ${summary.substring(
+            0,
+            50
+          )}...`
+        );
       }
     }
   } catch (error: any) {
     // 에러가 발생해도 로그만 남기고 무시 (graceful degradation)
-    console.error('🚨 [AI Summary] Background generation error:', error);
-    console.error('🚨 [AI Summary] Error stack:', error.stack);
-    console.error('🚨 [AI Summary] Error message:', error.message);
+    console.error("🚨 [AI Summary] Background generation error:", error);
+    console.error("🚨 [AI Summary] Error stack:", error.stack);
+    console.error("🚨 [AI Summary] Error message:", error.message);
+    console.error("🚨 [AI Summary] Error details:", {
+      name: error.name,
+      code: error.code,
+      status: error.status,
+      statusText: error.statusText,
+    });
   }
 }

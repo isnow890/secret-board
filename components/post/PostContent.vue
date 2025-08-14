@@ -19,7 +19,7 @@
 
     <!-- AI 요약 카드 (삭제되지 않은 경우만) -->
     <AiSummaryCard 
-      v-if="!post.is_deleted && post.ai_summary"
+      v-if="!post.is_deleted && post.ai_summary && !aiSummaryGenerating"
       :summary="post.ai_summary"
       :generated-at="post.summary_generated_at"
     />

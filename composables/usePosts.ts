@@ -357,10 +357,20 @@ export const usePost = (postId: string) => {
               .replace(/<[^>]*>/g, "")
               .trim().length;
             if (textLength >= 100) {
+              // AI 요약 초기화하고 생성 중 상태 활성화
+              post.value.ai_summary = null;
+              post.value.summary_generated_at = null;
               aiSummaryGenerating.value = true;
               console.log(
                 "🤖 AI summary regeneration in progress after edit..."
               );
+
+              // 토스트로 사용자에게 알림
+              useToast().add({
+                title: "AI 요약 재생성 중",
+                description: "잠시 후 새로운 요약이 표시됩니다.",
+                color: "blue",
+              });
             }
           }
         }
@@ -511,12 +521,14 @@ export const usePost = (postId: string) => {
                 aiSummaryGenerating.value = false;
                 console.log("🤖 AI summary generation completed");
 
-                // 토스트 알림 표시
-                useToast().add({
-                  title: "AI 요약 완료",
-                  description: "AI가 게시글 요약을 생성했습니다.",
-                  color: "green",
-                });
+                // 수정시에만 토스트 알림 표시
+                if (oldSummary === null || oldSummary === undefined) {
+                  useToast().add({
+                    title: "AI 요약 완료",
+                    description: "새로운 요약이 생성되었습니다.",
+                    color: "green",
+                  });
+                }
               }
             } else {
               console.log("📭 No AI summary changes detected");

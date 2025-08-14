@@ -1,4 +1,16 @@
-// server/api/posts/[id].delete.ts
+/**
+ * @description 특정 ID의 게시글을 삭제하는 API 엔드포인트입니다.
+ * 소프트 삭제(soft delete)를 수행하며, 게시글 내용과 첨부파일 정보를 제거하고 `is_deleted` 플래그를 true로 설정합니다.
+ * 게시글에 포함된 이미지와 첨부파일은 스토리지에서 물리적으로 삭제합니다.
+ * @see /api/posts/:id
+ * @method DELETE
+ * @param {object} event - H3 이벤트 객체
+ * @returns {Promise<object>} 삭제 성공 메시지와 삭제된 파일 수를 포함하는 응답 객체
+ * @throws {400} 게시글 ID 또는 비밀번호가 없는 경우
+ * @throws {401} 비밀번호가 일치하지 않는 경우
+ * @throws {404} 해당 ID의 게시글을 찾을 수 없는 경우
+ * @throws {500} 서버 오류 발생 시
+ */
 import { serverSupabaseClient } from "#supabase/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
@@ -6,44 +18,28 @@ import type { Database } from '~/types/supabase';
 import { extractImagePathsFromHtml } from '~/utils/imageUtils';
 import { withApiKeyValidation } from '~/server/utils/apiKeyValidation';
 
+/**
+ * @description 게시글 삭제 요청을 위한 Zod 유효성 검사 스키마
+ */
 const deletePostSchema = z.object({
   password: z.string().min(1, "비밀번호를 입력해주세요")
 });
 
 export default withApiKeyValidation(async (event) => {
   try {
-    console.log('DELETE 요청 시작:', event.node.req.method, event.node.req.url)
-    
-    // POST ID 추출
     const postId = getRouterParam(event, 'id')
-    console.log('추출된 postId:', postId)
     if (!postId) {
-      console.error('postId가 없음')
       throw createError({
         statusCode: 400,
         statusMessage: '게시글 ID가 필요합니다.'
       })
     }
 
-    // 요청 본문에서 비밀번호 읽기
     const body = await readBody(event)
-    console.log('요청 본문 수신:', { hasPassword: !!body?.password })
-    
-    try {
-      const { password } = deletePostSchema.parse(body)
-      console.log('비밀번호 파싱 성공, 길이:', password?.length)
-    } catch (parseError) {
-      console.error('비밀번호 파싱 실패:', parseError)
-      throw createError({
-        statusCode: 400,
-        statusMessage: '비밀번호가 필요합니다.'
-      })
-    }
     const { password } = deletePostSchema.parse(body)
 
     const supabase = await serverSupabaseClient<Database>(event)
 
-    // 게시글 존재 확인 및 가져오기 (삭제되지 않은 게시글만, 첨부파일 정보 포함)
     const { data: post, error: fetchError } = await supabase
       .from('posts')
       .select('id, password_hash, content, is_deleted, attached_files')
@@ -58,7 +54,6 @@ export default withApiKeyValidation(async (event) => {
       })
     }
 
-    // 비밀번호 확인
     const isValidPassword = await bcrypt.compare(password, post.password_hash)
     if (!isValidPassword) {
       throw createError({
@@ -67,58 +62,37 @@ export default withApiKeyValidation(async (event) => {
       })
     }
 
-    // 게시글에서 이미지 경로들 추출 (soft delete에서도 이미지는 삭제)
     const imagePaths = extractImagePathsFromHtml(post.content)
-    
-    // 첨부파일 정보 추출
     const attachedFiles = (post as any)?.attached_files || []
     
-    // 이미지들이 있다면 Storage에서 삭제
     if (imagePaths.length > 0) {
-      console.log(`게시글 ${postId} 삭제: ${imagePaths.length}개 이미지 삭제 시도`)
-      
       const { error: storageError } = await supabase.storage
         .from('post-images')
         .remove(imagePaths)
-      
       if (storageError) {
         console.error('이미지 삭제 중 오류:', storageError)
-        // 이미지 삭제 실패해도 게시글은 삭제 진행
-      } else {
-        console.log(`게시글 ${postId}: ${imagePaths.length}개 이미지 삭제 완료`)
       }
     }
 
-    // 첨부파일들이 있다면 Storage에서 삭제
     if (attachedFiles.length > 0) {
-      console.log(`게시글 ${postId} 삭제: ${attachedFiles.length}개 첨부파일 삭제 시도`)
-      
       for (const attachedFile of attachedFiles) {
         try {
-          // URL에서 파일 경로 추출 (예: https://...supabase.co/storage/v1/object/public/attachments/2024/01/15/file.pdf)
           const urlParts = attachedFile.url.split('/storage/v1/object/public/attachments/');
           if (urlParts.length > 1) {
             const filePath = urlParts[1];
-            
             const { error: deleteError } = await supabase.storage
               .from('attachments')
               .remove([filePath]);
-            
             if (deleteError) {
               console.error(`첨부파일 삭제 실패: ${filePath}`, deleteError);
-              // 첨부파일 삭제 실패해도 게시글은 삭제 진행
-            } else {
-              console.log(`첨부파일 삭제 완료: ${filePath}`);
             }
           }
         } catch (deleteErr) {
           console.error("첨부파일 삭제 중 오류:", deleteErr);
-          // 첨부파일 삭제 실패해도 게시글은 삭제 진행
         }
       }
     }
 
-    // Soft Delete: 게시글 내용을 삭제하고 is_deleted를 true로 설정
     const { error: deleteError } = await supabase
       .from('posts')
       .update({

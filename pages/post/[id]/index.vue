@@ -164,8 +164,8 @@ const {
   aiSummaryGenerating,
   fetchPost,
   toggleLike,
-  setupRealtimeSubscription,
-  cleanupRealtimeSubscription,
+  // setupRealtimeSubscription은 fetchPost에서 자동으로 호출됨
+  // cleanupRealtimeSubscription은 onUnmounted에서 자동으로 호출됨
 } = usePost(postId);
 
 const refresh = fetchPost;
@@ -178,6 +178,8 @@ const {
   cancelDelete,
   goToEdit,
   handleEditPasswordConfirm,
+  showDeleteConfirmation,
+  cancelPasswordModal,
 } = usePostActions(postId);
 
 // 다이얼로그 참조
@@ -194,7 +196,7 @@ const handleEdit = () => {
 };
 
 const handleDeleteRequest = () => {
-  showDeleteModal.value = true;
+  showDeleteConfirmation();
 };
 
 const handleDeleteConfirm = async (password: string) => {
@@ -244,7 +246,7 @@ const handleEditPasswordConfirmWithErrorHandling = async (password: string) => {
 };
 
 const cancelEdit = () => {
-  showEditPasswordModal.value = false;
+  cancelPasswordModal();
 };
 
 // 페이지 제목 동적 업데이트

@@ -1,49 +1,49 @@
 // server/api/ai/summarize.post.ts
-import { GoogleGenAI } from '@google/genai';
-import { HtmlTextProcessor, tiptapUtils } from '~/utils/htmlTextProcessor';
+import { GoogleGenAI } from "@google/genai";
+import { HtmlTextProcessor, tiptapUtils } from "~/utils/htmlTextProcessor";
 
 export default defineEventHandler(async (event) => {
   try {
     // API 키 확인
     const config = useRuntimeConfig();
     const apiKey = config.googleAiStudioApiKey;
-    
+
     if (!apiKey) {
       throw createError({
         statusCode: 500,
-        statusMessage: 'Google AI Studio API key is not configured'
+        statusMessage: "Google AI Studio API key is not configured",
       });
     }
 
     // 요청 본문 파싱
     const body = await readBody(event);
-    const { text, type = 'text' } = body;
+    const { text, type = "text" } = body;
 
     // 입력 검증
-    if (!text || typeof text !== 'string') {
+    if (!text || typeof text !== "string") {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Text is required and must be a string'
+        statusMessage: "Text is required and must be a string",
       });
     }
 
     if (text.trim().length === 0) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Text cannot be empty'
+        statusMessage: "Text cannot be empty",
       });
     }
 
     if (text.length > 50000) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Text is too long (max 50000 characters)'
+        statusMessage: "Text is too long (max 50000 characters)",
       });
     }
 
     // 텍스트 전처리 - 순수 텍스트만 추출
     let textToProcess: string;
-    if (type === 'html') {
+    if (type === "html") {
       textToProcess = tiptapUtils.extractPlainText(text);
     } else {
       textToProcess = text;
@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
     if (textToProcess.trim().length === 0) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'No text content found to process'
+        statusMessage: "No text content found to process",
       });
     }
 
@@ -60,11 +60,12 @@ export default defineEventHandler(async (event) => {
     if (textToProcess.trim().length < 100) {
       return {
         success: false,
-        error: 'Content too short for summary (minimum 100 characters required)',
+        error:
+          "Content too short for summary (minimum 100 characters required)",
         data: {
           textLength: textToProcess.trim().length,
-          minimumLength: 100
-        }
+          minimumLength: 100,
+        },
       };
     }
 
@@ -95,26 +96,30 @@ ${textToProcess}`;
 
     // Gemini API 호출
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: [{
-        role: 'user',
-        parts: [{
-          text: `${systemPrompt}\n\n${userPrompt}`
-        }]
-      }],
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: `${systemPrompt}\n\n${userPrompt}`,
+            },
+          ],
+        },
+      ],
       config: {
         temperature: 0.3, // 일관성 있는 결과
         maxOutputTokens: 200, // 짧은 요약을 위해
         candidateCount: 1,
-      }
+      },
     });
 
     let summary = response.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+
     if (!summary) {
       throw createError({
         statusCode: 500,
-        statusMessage: 'Failed to generate summary'
+        statusMessage: "Failed to generate summary",
       });
     }
 
@@ -122,7 +127,7 @@ ${textToProcess}`;
 
     // 요약문 길이 검증 (너무 길면 잘라내기)
     if (summary.length > 200) {
-      summary = summary.substring(0, 197) + '...';
+      summary = summary.substring(0, 197) + "...";
     }
 
     // 응답 반환
@@ -133,32 +138,31 @@ ${textToProcess}`;
         originalLength: textToProcess.length,
         summary: summary,
         summaryLength: summary.length,
-        generatedAt: new Date().toISOString()
-      }
+        generatedAt: new Date().toISOString(),
+      },
     };
-
   } catch (error: any) {
-    console.error('AI summary generation error:', error);
-    
+    console.error("AI summary generation error:", error);
+
     // Google AI API 에러 처리
-    if (error.message?.includes('API key')) {
+    if (error.message?.includes("API key")) {
       throw createError({
         statusCode: 401,
-        statusMessage: 'Invalid API key'
+        statusMessage: "Invalid API key",
       });
     }
-    
-    if (error.message?.includes('quota') || error.message?.includes('limit')) {
+
+    if (error.message?.includes("quota") || error.message?.includes("limit")) {
       throw createError({
         statusCode: 429,
-        statusMessage: 'API quota exceeded. Please try again later.'
+        statusMessage: "API quota exceeded. Please try again later.",
       });
     }
-    
+
     // 기타 에러
     throw createError({
       statusCode: error.statusCode || 500,
-      statusMessage: error.statusMessage || 'AI summary generation failed'
+      statusMessage: error.statusMessage || "AI summary generation failed",
     });
   }
 });

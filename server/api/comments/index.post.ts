@@ -1,10 +1,25 @@
-// server/api/comments/index.post.ts
+/**
+ * @description 새 댓글을 생성하는 API 엔드포인트입니다.
+ * Zod를 사용한 유효성 검사, 비밀번호 해싱, 계층형 댓글 깊이 관리, 글쓴이 검증을 수행합니다.
+ * @see /api/comments
+ * @method POST
+ * @param {object} event - H3 이벤트 객체
+ * @returns {Promise<object>} 생성된 댓글 정보를 포함하는 응답 객체
+ * @throws {400} 유효하지 않은 요청 데이터, 댓글 깊이 초과 시
+ * @throws {401} 글쓴이 비밀번호가 틀린 경우
+ * @throws {404} 게시글 또는 부모 댓글을 찾을 수 없는 경우
+ * @throws {405} POST 메서드가 아닌 경우
+ * @throws {500} 서버 오류 발생 시
+ */
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { serverSupabaseClient } from "#supabase/server";
 import type { Database } from "~/types/supabase";
 import { withApiKeyValidation } from "~/server/utils/apiKeyValidation";
 
+/**
+ * @description 댓글 생성을 위한 Zod 유효성 검사 스키마
+ */
 const CreateCommentSchema = z.object({
   postId: z.string().uuid(),
   parentId: z.string().uuid().optional(),
