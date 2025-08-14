@@ -239,7 +239,7 @@ async function generateAiSummaryInBackground(
       ],
       config: {
         temperature: 0.3,
-        maxOutputTokens: 1000,
+        maxOutputTokens: 8192,
         candidateCount: 1,
       },
     });
