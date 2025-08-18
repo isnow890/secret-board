@@ -8,39 +8,53 @@
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Tiptap](https://img.shields.io/badge/Tiptap-18181B?style=for-the-badge&logo=tiptap&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-009639?style=for-the-badge&logo=nginx&logoColor=white)
 
-Nuxt.js와 Supabase로 구축된 진정한 익명 게시판 시스템으로, 완전한 사용자 익명성을 보장하도록 설계되었습니다.
+Nuxt.js와 Supabase로 구축된 익명 게시판 시스템입니다. 완전한 사용자 익명성 보장을 추구합니다.
 
-## 핵심 익명성 특장점
+## 주요 특징
 
-- **회원가입 불필요**: 사용자 테이블이 존재하지 않아 근본적으로 사용자 추적 불가능
-- **단방향 암호화**: bcrypt 해싱으로 비밀번호 해독이 불가능하여 특정 사용자 유추 차단
+### 🔒 완전한 익명성 보장
+- **사용자 테이블 없음**: 회원가입 시스템 자체가 존재하지 않아 근본적으로 추적 불가능
 - **IP 추적 차단**: IP 주소를 데이터베이스나 로그에 일절 저장하지 않음
-- **임시 닉네임**: 게시글/댓글마다 새로운 닉네임 사용으로 연관성 분석 불가
-- **세션 추적 없음**: 지속적인 사용자 세션이나 쿠키를 사용하지 않음
-- **로그 익명화**: 서버 로그에서 hostname, PID 등 모든 개인 식별 정보 자동 필터링
+- **세션 추적 없음**: 지속적인 세션이나 쿠키를 사용하지 않음
+- **닉네임 기반 소유권**: 게시글/댓글마다 임시 닉네임 + 비밀번호로 간단한 소유권 관리
+- **익명 로깅**: 서버 로그에서 개인 식별 정보를 완전히 제거
 
-## 핵심 익명성 보장 기능
+<details>
+<summary>익명 접근 로그 형식 예시</summary>
 
-### 데이터베이스 레벨 익명성
+애플리케이션은 익명성 보장을 위해 **최소 필드**만 접근 로그에 남깁니다:
 
-- **사용자 테이블 없음**: 회원가입이나 로그인 시스템이 존재하지 않음
-- **IP 주소 미저장**: IP 주소가 데이터베이스에 저장되지 않음
-- **닉네임 기반 식별**: 게시글/댓글마다 임시 닉네임 사용
-- **비밀번호 기반 소유권**: 사용자 추적 없이 간단한 비밀번호로 게시글/댓글 수정 가능
-- **단방향 암호화**: bcrypt 해싱으로 비밀번호 해독이 불가능하여 특정 사용자 유추 차단
+```json
+{"level":30,"time":"2025-08-13T01:42:51.775Z","type":"access","method":"GET","url":"/","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36","responseTime":1907,"statusCode":500,"msg":"GET /"}
+```
 
-### 애플리케이션 레벨 익명성
+**포함되는 필드:**
+- `time`: ISO 시간
+- `method`, `url`: HTTP 메서드와 경로  
+- `userAgent`: 브라우저 정보 (개인 식별 불가)
+- `responseTime`: 처리 시간
+- `statusCode`: 응답 상태
 
-- **익명 로깅**: 서버 로그에서 hostname, PID 등 식별 정보 제외
-- **세션 추적 없음**: 지속적인 사용자 세션이나 쿠키 없음
-- **프라이버시 우선 설계**: 모든 개인 식별 정보가 로그에서 필터링됨
+**의도적으로 제거되는 항목:**
+- IP/remoteAddress/X-Forwarded-For
+- 쿠키/세션 ID/Authorization 헤더
+- 사용자 식별 토큰
+- Geo/Location/Referrer 등 트래킹성 데이터
 
-### 인프라 레벨 익명성
+이 설계로 운영자는 트래픽 패턴만 관찰할 수 있고 **개별 사용자를 역추적할 수 없습니다.**
+</details>
 
-- **최소 데이터 수집**: 기능에 필수적인 데이터만 저장
-- **분석 추적 없음**: 사용자 행동 추적이나 분석 기능 없음
-- **안전한 비밀번호 해싱**: 게시글/댓글 비밀번호의 안전한 해싱 처리
+### 🤖 AI 지원 기능
+- **AI 요약**: 긴 게시글을 자동으로 요약하여 빠른 내용 파악 지원
+- **AI 말투 변환**: 다양한 말투로 자동 변환하여 개성 있는 글쓰기 지원
+
+### 🌐 완전한 오픈소스
+- **MIT 라이센스**: 자유로운 사용, 수정, 배포 가능
+- **간편한 배포**: Supabase 프로젝트만 있으면 Vercel이나 Docker로 쉽게 배포
 
 ## 기술 스택
 
@@ -49,61 +63,28 @@ Nuxt.js와 Supabase로 구축된 진정한 익명 게시판 시스템으로, 완
 - **데이터베이스**: Supabase (PostgreSQL)
 - **스타일링**: Tailwind CSS
 - **아이콘**: Nuxt Icon을 통한 Lucide Icons
-- **리치 텍스트**: Quill.js 에디터
+- **리치 텍스트**: Tiptap (ProseMirror 기반 커스터마이징 에디터)
 - **테스팅**: Vitest + Playwright
 
 ## 프로젝트 구조
 
 ```
 hit-secret/
-├── components/           # Vue 컴포넌트
-│   ├── CommentForm.vue      # 댓글 작성 폼
-│   ├── CommentItem.vue      # 개별 댓글 표시
-│   ├── CommentList.vue      # 대댓글 포함 댓글 스레드
-│   ├── Post/                # 게시글 관련 컴포넌트
-│   │   ├── PostContent.vue     # 게시글 내용 표시
-│   │   ├── PostForm.vue        # 게시글 작성/수정
-│   │   └── PostHeader.vue      # 게시글 메타데이터 표시
-│   ├── Sidebar/             # 사이드바 컴포넌트
-│   │   ├── BoardStats.vue      # 게시판 통계
-│   │   ├── PopularPosts.vue    # 인기 게시글 위젯
-│   │   └── RecentComments.vue  # 최근 댓글 위젯
-│   └── ui/                  # 재사용 가능한 UI 컴포넌트
-├── composables/          # Vue 컴포저블
-│   ├── useComments.ts       # 댓글 관련 작업
-│   ├── usePosts.ts          # 게시글 관련 작업
-│   ├── useLikes.ts          # 좋아요 기능
-│   └── useLocalStorage.ts   # 브라우저 저장소 유틸리티
-├── pages/               # Nuxt 페이지 (파일 기반 라우팅)
-│   ├── index.vue           # 메인 게시판 페이지
-│   ├── post/
-│   │   ├── create.vue       # 게시글 작성 페이지
-│   │   └── [id]/
-│   │       ├── index.vue     # 게시글 상세 페이지
-│   │       └── edit.vue      # 게시글 수정 페이지
-│   └── login.vue           # 간단한 비밀번호 보호
-├── server/              # Nuxt 서버 사이드 코드
-│   ├── api/                # API 엔드포인트
-│   │   ├── posts/           # 게시글 관련 엔드포인트
-│   │   ├── comments/        # 댓글 관련 엔드포인트
-│   │   └── upload/          # 파일 업로드 엔드포인트
-│   ├── middleware/         # 서버 미들웨어
-│   │   ├── access-logger.ts  # 익명 접근 로깅
-│   │   └── error-handler.ts  # 에러 처리
-│   └── utils/              # 서버 유틸리티
-├── utils/               # 공유 유틸리티
-│   ├── logger.ts           # 익명 로깅 시스템
-│   ├── imageUtils.ts       # 이미지 처리 유틸리티
-│   └── nicknameGenerator.ts # 랜덤 닉네임 생성
-├── middleware/          # Nuxt 미들웨어
-│   └── auth.global.ts      # 간단한 사이트 전체 비밀번호 보호
-├── supabase/           # 데이터베이스 관련 파일
-│   ├── migrations/         # 데이터베이스 마이그레이션 파일
-│   └── schema.sql          # 데이터베이스 스키마
-└── tests/              # 테스트 파일
-    ├── unit/               # 단위 테스트
-    ├── e2e/                # E2E 테스트
-    └── setup/              # 테스트 설정
+├── components/          # Vue 컴포넌트
+│   ├── editor/         # Tiptap 에디터 & 뷰어
+│   ├── post/           # 게시글 관련 컴포넌트
+│   ├── sidebar/        # 사이드바 위젯
+│   └── ui/            # 공용 UI 컴포넌트
+├── pages/              # 페이지 (파일 기반 라우팅)
+├── server/api/         # API 엔드포인트
+│   ├── posts/         # 게시글 API
+│   ├── comments/      # 댓글 API
+│   └── upload/        # 파일 업로드 API
+├── composables/        # Vue 컴포저블
+├── utils/             # 유틸리티 (logger 등)
+├── types/             # TypeScript 타입 정의
+├── tests/             # 테스트 코드
+└── supabase/          # DB 스키마
 ```
 
 ## 데이터베이스 스키마
@@ -273,15 +254,255 @@ erDiagram
 
    `http://localhost:3000`에서 애플리케이션 접근 가능
 
-### 프로덕션 빌드
+### Supabase 프로젝트 상세 셋업
 
+1. Supabase 프로젝트 생성 (Region 선택 후 생성)
+2. Project Settings > API 에서 `Project URL` / `anon public` 키 복사
+3. SQL Editor 에서 `supabase/schema.sql` 내용 전체 실행 (필요 시 한 번 더 실행해 FK/Index 적용 확인)
+4. (이미지 업로드 등 파일 사용 시) Storage > 새 Bucket 생성
+   - 이름 예: `public`
+   - Public 권한 허용 (또는 RLS 정책 별도 작성)
+5. (선택) Storage RLS 정책이 켜져 있다면 최소 다음 정책 추가:
+   - `SELECT/INSERT` 모두 `true;` 로 허용 (익명 게시판 특성)
+6. (선택) 로컬 테스트 시 Supabase CLI 사용할 경우:
+   ```bash
+   npm i -g supabase
+   supabase start # 로컬 컨테이너 실행
+   ```
+
+### 환경 변수 설정 (.env)
+
+| 변수                   | 구분 | 설명                                              | 예시                     |
+| ---------------------- | ---- | ------------------------------------------------- | ------------------------ |
+| SUPABASE_URL           | 필수 | Supabase 프로젝트 URL                             | https://xxxx.supabase.co |
+| SUPABASE_ANON_KEY      | 필수 | Supabase public anon key                          | eyJhbGciOiJI...          |
+| SITE_PASSWORD          | 필수 | 사이트 진입 보호 비밀번호                         | mysecret                 |
+| SERVER_API_KEY         | 필수 | 서버 내부 API 보호용 키                           | random-long-key          |
+| AD_VISIBLE             | 선택 | 전체 광고 on/off (true/false)                     | true                     |
+| AD_SIDEBAR_ENABLED     | 선택 | 사이드바 광고 on/off                              | true                     |
+| AD_POST_DETAIL_ENABLED | 선택 | 게시글 상세 하단 광고 on/off                      | true                     |
+| COUPANG_SIDEBAR_AD_URL | 선택 | 쿠팡 파트너스 사이드바 위젯 URL                   | https://coupa.ng/abc123  |
+| COUPANG_POST_AD_URL    | 선택 | 게시글 하단 쿠팡 광고 URL                         | https://coupa.ng/def456  |
+
+`.env.example` 파일을 복사하여 `.env` 생성 후 값을 설정하세요. 광고 기능이 필요 없다면 `AD_VISIBLE=false`로 설정하면 됩니다.
+
+### Docker 로컬 빌드 & 실행
+
+멀티 스테이지 Dockerfile 이 포함되어 있습니다.
+
+핵심 내용 (요약):
+
+```Dockerfile
+FROM node:22-alpine AS builder
+WORKDIR /app
+RUN apk add --no-cache libc6-compat python3 make g++
+COPY package*.json ./
+RUN npm ci || npm install
+COPY . .
+RUN npm run build
+
+FROM node:22-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000
+RUN apk add --no-cache libc6-compat
+COPY --from=builder /app/.output ./.output
+EXPOSE 3000
+CMD ["node", ".output/server/index.mjs"]
+```
+
+로컬 단일 이미지 빌드 & 실행:
+
+```bash
+docker build -t hit-secret .
+docker run --rm -p 3000:3000 \
+    -e SUPABASE_URL=$SUPABASE_URL \
+    -e SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+    -e SITE_PASSWORD=$SITE_PASSWORD \
+    -e SERVER_API_KEY=$SERVER_API_KEY \
+    hit-secret
+```
+
+### docker-compose 프로덕션 배포 예시
+
+`docker-compose.deploy.yml` 요약:
+
+```yaml
+version: "3.8"
+services:
+  hit-secret:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hit-secret
+    volumes:
+      - /home/ubuntu/workspace/apps/hit-secret/logs:/app/logs
+    ports:
+      - "3011:3000"
+    environment:
+      - NODE_ENV=production
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SITE_PASSWORD=${SITE_PASSWORD}
+      - SERVER_API_KEY=${SERVER_API_KEY}
+    restart: unless-stopped
+    networks:
+      - infra-net
+networks:
+  infra-net:
+    external: true
+```
+
+배포 절차 예:
+
+```bash
+docker compose -f docker-compose.deploy.yml build --pull
+docker compose -f docker-compose.deploy.yml up -d
+docker compose -f docker-compose.deploy.yml logs -f
+```
+
+로그 디렉토리 권한 문제 발생 시:
+
+```bash
+sudo mkdir -p /home/ubuntu/workspace/apps/hit-secret/logs
+sudo chown -R $(whoami):$(whoami) /home/ubuntu/workspace/apps/hit-secret/logs
+```
+
+업데이트(롤링) 시:
+
+```bash
+git pull
+docker compose -f docker-compose.deploy.yml build --no-cache
+docker compose -f docker-compose.deploy.yml up -d
+```
+
+캐시 이슈(파일 누락 등) 의심 시 `--no-cache` 옵션을 사용하거나 Dockerfile 상단에 `ARG BUILD_REVISION=<date>` 등을 추가해 캐시 무효화 할 수 있습니다.
+
+### 헬스체크 / 운영 팁
+
+- (선택) nginx 앞단 배치 후 `/` 프록시, gzip/캐시 헤더 추가
+- 로그 회전: 호스트에서 `logrotate` 대상에 /home/ubuntu/workspace/apps/hit-secret/logs/\*.log 추가
+- 메트릭 필요 시 별도 reverse proxy 레벨에서 수집 (애플리케이션은 최소한의 정보만 유지)
+
+### Nginx 리버스 프록시 예시 (서브패스 /secret/ 로 서비스)
+
+다음 설정은 `hit-secret` 컨테이너(도커 네트워크 내 이름) 3000 포트를 `/secret/` 경로로 프록시합니다. 업로드/스트리밍을 위해 버퍼링을 줄이고 WebSocket 업그레이드를 허용합니다.
+
+`/etc/nginx/conf.d/hit-secret.conf` 예시:
+
+```nginx
+upstream hit_secret_upstream {
+   server hit-secret:3000;
+   keepalive 64;
+}
+
+map $http_upgrade $connection_upgrade {
+   default upgrade;
+   ''      close;
+}
+
+server {
+   listen 80;
+   server_name _;
+
+   # gzip (선택)
+   gzip on;
+   gzip_types text/plain text/css application/json application/javascript application/xml+rss application/xml image/svg+xml;
+   gzip_min_length 512;
+
+   # 메인 애플리케이션 서브패스 매핑
+   location /secret/ {
+      proxy_pass http://hit-secret:3000/secret/;
+      proxy_http_version 1.1;
+
+      # 필수 헤더 (IP 익명성 유지 위해 백엔드에서 무시하거나 저장 금지)
+      proxy_set_header Host              $host;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header X-Forwarded-Host  $host;
+      # 아래 두 줄은 클라이언트 IP 를 전달하므로 완전한 익명성 정책이라면 제거 가능
+      proxy_set_header X-Real-IP         $remote_addr;          # 필요시만
+      proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for; # 필요시만
+
+      # WebSocket / HMR / 업그레이드
+      proxy_set_header Upgrade           $http_upgrade;
+      proxy_set_header Connection        $connection_upgrade;
+
+      # 업로드 성능
+      client_max_body_size           100m;
+      client_body_buffer_size        128k;
+      proxy_request_buffering        off;        # chunked 업로드
+      proxy_buffering                off;        # 실시간 전송 (필요 시 on)
+
+      proxy_connect_timeout          90;
+      proxy_send_timeout             90;
+      proxy_read_timeout             90;
+
+      # 캐시 제어 (SSR 응답은 기본 no-store, 정적 자산에만 별도 location 사용 권장)
+      add_header X-Frame-Options DENY;
+      add_header X-Content-Type-Options nosniff;
+      add_header Referrer-Policy strict-origin-when-cross-origin;
+   }
+
+   # 정적 자산 직접 서빙 예 (Nuxt .output/public 가 /_nuxt 등으로 반영될 경우)
+   # location /_nuxt/ { proxy_pass http://hit-secret:3000/_nuxt/; proxy_cache static_cache; }
+}
+```
+
+익명성 강화하려면 `X-Real-IP`, `X-Forwarded-For` 전달 라인을 제거하거나 백엔드 로거에서 해당 필드 무시하도록 유지하세요.
+
+서브패스(`/secret/`)가 아닌 루트(`/`) 제공을 원한다면 `location / { proxy_pass http://hit-secret:3000/; }` 로 단순화하면 됩니다.
+
+### Vercel 배포
+
+Vercel을 사용한 간편한 배포 방법입니다.
+
+**1. 배포 준비**
+```bash
+# GitHub 저장소에 코드 푸시
+git add .
+git commit -m "Deploy to Vercel"
+git push origin main
+```
+
+**2. Vercel 프로젝트 생성**
+- [Vercel 대시보드](https://vercel.com/dashboard)에서 "New Project" 클릭
+- GitHub 저장소 연결 및 선택
+- Framework Preset: **Nuxt.js** 자동 감지됨
+- Root Directory: 루트 디렉토리 그대로 사용
+
+**3. 환경 변수 설정**
+Vercel 프로젝트 설정 > Environment Variables에서 다음 변수들을 추가:
+
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SITE_PASSWORD=your-site-password
+SERVER_API_KEY=your-random-api-key
+```
+
+**4. 배포 실행**
+- "Deploy" 버튼 클릭하면 자동으로 빌드 및 배포 진행
+- 완료 후 제공되는 URL로 접속 가능
+
+**5. 도메인 설정 (선택)**
+- Project Settings > Domains에서 커스텀 도메인 연결 가능
+- Vercel은 자동으로 HTTPS 인증서를 제공
+
+**업데이트 방법:**
+```bash
+git push origin main  # GitHub에 푸시하면 자동으로 재배포됨
+```
+
+---
+
+## 테스트
+
+### 프로덕션 빌드
 ```bash
 npm run build
 npm run preview
 ```
 
-## 테스트
-
+### 테스트 실행
 ```bash
 # 단위 테스트
 npm run test
@@ -293,35 +514,21 @@ npm run test:e2e
 npm run test:ui
 ```
 
-## 주요 기능
-
-- **익명 게시**: 회원가입 없이 닉네임과 비밀번호만으로 게시
-- **계층형 댓글**: 깊이 제어가 있는 중첩 답글 시스템
-- **파일 첨부**: 이미지와 문서 지원
-- **리치 텍스트 에디터**: 이미지 지원이 포함된 WYSIWYG 에디터
-- **반응형 디자인**: 모바일 우선 반응형 인터페이스
-- **실시간 업데이트**: 실시간 댓글 및 좋아요 개수 업데이트
-- **검색 기능**: 게시글 전체 텍스트 검색
-- **소프트 삭제**: 게시글과 댓글 복구 가능
-- **속도 제한**: 스팸과 남용 방지
-
-## 개인정보 보호 및 보안
-
-- **IP 로깅 없음**: IP 주소가 데이터베이스나 로그에 저장되지 않음
-- **익명 로깅**: 서버 로그에서 모든 개인 식별 정보 제외
-- **비밀번호 보호**: 접근 제어를 위한 간단한 사이트 전체 비밀번호
-- **안전한 해싱**: bcrypt를 사용한 모든 비밀번호의 안전한 해싱
-- **입력 무해화**: XSS 방지를 위한 모든 사용자 입력 무해화
-- **파일 업로드 보안**: 타입 검증이 포함된 안전한 파일 처리
-
 ## 데이터베이스 접근
 
 Supabase 데이터베이스 스키마와 샘플 데이터를 검토할 수 있습니다. 검사나 테스트 목적으로 라이브 데이터베이스에 접근하고 싶으시면, 저에게 문의해 주세요.
 
-## 기여하기
-
-이 프로젝트는 익명 시스템 아키텍처의 데모 역할을 합니다. 익명성 기능을 유지하거나 향상시키는 기여를 환영합니다.
-
 ## 라이센스
 
-이 프로젝트는 내부 사용 및 데모 목적으로 제작되었습니다.
+이 프로젝트는 [MIT License](./LICENSE)를 따릅니다.\
+자유로운 사용 / 복제 / 수정 / 배포가 가능하며, 저작권 및 라이선스 전문 고지를 유지해야 합니다.
+
+배포본 혹은 파생 작업물에는 아래 고지를 포함해주세요:
+
+```
+Copyright (c) 2025 isnow890
+
+Released under the MIT License. See LICENSE for details.
+```
+
+배지: ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)

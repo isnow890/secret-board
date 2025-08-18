@@ -1,7 +1,14 @@
-// server/api/posts/index.get.ts
+/**
+ * @description 게시글 목록을 조회하는 API 엔드포인트입니다.
+ * 페이지네이션(페이지 기반, 커서 기반), 정렬, 검색 기능을 지원합니다.
+ * @see /api/posts
+ * @method GET
+ * @param {object} event - H3 이벤트 객체
+ * @returns {Promise<object>} 게시글 목록과 페이지네이션 정보를 포함하는 응답 객체
+ */
 import { serverSupabaseClient } from "#supabase/server";
 import type { Database } from "~/types/supabase";
-import { stripHtml } from "~/server/utils/textUtils";
+import { stripHtml } from "~/server/utils";
 import { logApiCall, logError } from "~/utils/logger";
 
 export default defineEventHandler(async (event) => {
@@ -234,6 +241,9 @@ export default defineEventHandler(async (event) => {
     // 성공 로깅
     const responseTime = Date.now() - startTime;
     logApiCall("GET", "/api/posts", responseTime, 200);
+
+    // UTF-8 인코딩 명시적 설정
+    setHeader(event, 'Content-Type', 'application/json; charset=utf-8');
 
     return response;
   } catch (error: any) {

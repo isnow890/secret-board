@@ -178,6 +178,7 @@ describe("usePosts Composable", () => {
       const result = await createPost({
         title: "New Post",
         content: "Content",
+        nickname: "TestUser",
         password: "test123",
         attachedFiles: [],
       });
@@ -209,6 +210,7 @@ describe("usePosts Composable", () => {
         createPost({ 
           title: "New Post", 
           content: "Content", 
+          nickname: "TestUser",
           password: "test123", 
           attachedFiles: [] 
         })

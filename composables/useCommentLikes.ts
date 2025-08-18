@@ -1,22 +1,27 @@
-// composables/useCommentLikes.ts
 import type { Comment } from '~/types'
 
+/**
+ * @description 댓글의 '좋아요' 기능과 관련된 로직을 관리하는 컴포저블입니다.
+ * 낙관적 업데이트를 지원하여 빠른 UI 반응성을 제공합니다.
+ */
 export const useCommentLikes = () => {
-  // 댓글 좋아요 토글 (낙관적 업데이트 지원)
+  /**
+   * @description 댓글 좋아요 상태를 토글합니다. UI를 먼저 업데이트(낙관적 업데이트)하고 서버에 변경 사항을 전송합니다.
+   * @param {string} commentId - 좋아요를 토글할 댓글의 ID
+   * @param {number} [currentLikeCount=0] - 현재 댓글의 좋아요 수
+   * @returns {Promise<{success: boolean, isLiked: boolean, likeCount: number, data?: any}>} 좋아요 처리 결과
+   */
   const toggleCommentLike = async (commentId: string, currentLikeCount: number = 0) => {
     try {
       const { toggleCommentLike: toggleLike } = useLocalStorage()
       
-      // toggleCommentLike는 새로운 상태를 반환 (true: 좋아요 추가, false: 좋아요 취소)
       const newLikedState = toggleLike(commentId)
       
-      // 낙관적 업데이트용 새로운 카운트 계산
       const optimisticCount = newLikedState
         ? currentLikeCount + 1
         : Math.max(0, currentLikeCount - 1)
       
       try {
-        // 서버에 좋아요 상태 전달
         const response = await $fetch(`/api/comments/${commentId}/like`, {
           method: 'POST',
           body: { liked: newLikedState },
@@ -38,8 +43,7 @@ export const useCommentLikes = () => {
         }
       } catch (serverError) {
         console.error('서버 좋아요 처리 실패:', serverError)
-        // 서버 오류 시 localStorage 상태 롤백
-        toggleLike(commentId) // 다시 토글해서 원래 상태로 복원
+        toggleLike(commentId) // 롤백
         throw serverError
       }
     } catch (error) {
@@ -48,7 +52,13 @@ export const useCommentLikes = () => {
     }
   }
 
-  // 댓글 목록에서 특정 댓글의 좋아요 수 업데이트
+  /**
+   * @description 재귀적으로 댓글 목록을 탐색하여 특정 댓글의 좋아요 수를 업데이트합니다.
+   * @param {Comment[]} commentList - 전체 댓글 목록 (계층 구조)
+   * @param {string} commentId - 업데이트할 댓글의 ID
+   * @param {number} newLikeCount - 새로운 좋아요 수
+   * @returns {boolean} 업데이트 성공 여부
+   */
   const updateCommentLikeCount = (
     commentList: Comment[], 
     commentId: string, 
@@ -69,7 +79,11 @@ export const useCommentLikes = () => {
     return false
   }
 
-  // 서버 전용 댓글 좋아요 (기존 로직 유지)
+  /**
+   * @description 서버에 댓글 좋아요를 요청하는 레거시 함수. (useComments에서 사용)
+   * @param {string} commentId - 좋아요를 처리할 댓글 ID
+   * @returns {Promise<any>} 서버 응답 데이터
+   */
   const likeCommentServer = async (commentId: string) => {
     try {
       const response = await $fetch(`/api/comments/${commentId}/like`, {

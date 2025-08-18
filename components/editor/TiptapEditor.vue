@@ -121,7 +121,8 @@
       </button>
 
       <button
-        @click="toggleCodeBlock"
+        @click.prevent="toggleCodeBlock"
+        @touchend.prevent="handleCodeBlockTouch"
         :class="{ 'is-active': editor.isActive('codeBlock') }"
         type="button"
         class="toolbar-btn"
@@ -242,6 +243,19 @@ const { getCommonExtensions, getCommonEditorProps } = useTiptapCommon();
 const { detectCodeBlocksWithDelay, setupCopyButtonHandler } =
   useCodeBlockHeaders();
 
+// 모바일에서 중복 입력 방지를 위한 디바운스 시스템
+const lastInputTime = ref(0);
+const inputDebounceDelay = 100; // 100ms 디바운스 (더 안전하게)
+
+const isInputTooFast = () => {
+  const now = Date.now();
+  if (now - lastInputTime.value < inputDebounceDelay) {
+    return true;
+  }
+  lastInputTime.value = now;
+  return false;
+};
+
 // Initialize Tiptap editor
 const editor = useEditor({
   content: props.modelValue,
@@ -270,6 +284,57 @@ const editor = useEditor({
         tr.insertText('  ', selection.from, selection.to);
         view.dispatch(tr);
         return true;
+      }
+      
+      // 안드로이드에서 코드 블록 내 엔터키 무한 입력 문제 방지
+      if (event.key === 'Enter') {
+        const { state } = view;
+        const { $from } = state.selection;
+        
+        // 코드 블록 내부에서 엔터키를 눌렀는지 확인
+        const isInCodeBlock = $from.parent.type.name === 'codeBlock';
+        
+        if (isInCodeBlock) {
+          // 모바일 환경 감지 (안드로이드뿐만 아니라 모든 모바일)
+          const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                          ('ontouchstart' in window && window.innerWidth <= 1024);
+          
+          if (isMobile) {
+            console.log('Mobile Enter key in code block detected');
+            
+            // 입력이 너무 빠른지 확인 (디바운스) - 더 긴 지연 시간
+            if (isInputTooFast()) {
+              console.log('Enter key too fast, preventing');
+              event.preventDefault();
+              event.stopPropagation();
+              event.stopImmediatePropagation();
+              return true;
+            }
+            
+            console.log('Processing manual line break in code block');
+            
+            // 수동으로 줄바꿈 처리 - 더 안전한 방식
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            
+            // nextTick을 사용해서 다른 이벤트가 끝난 후 실행
+            nextTick(() => {
+              if (editor.value && !editor.value.isDestroyed) {
+                try {
+                  const currentState = editor.value.state;
+                  const tr = currentState.tr.insertText('\n', currentState.selection.from, currentState.selection.to);
+                  editor.value.view.dispatch(tr);
+                  console.log('Manual line break inserted successfully');
+                } catch (error) {
+                  console.error('Error inserting manual line break:', error);
+                }
+              }
+            });
+            
+            return true;
+          }
+        }
       }
       
       return false;
@@ -728,11 +793,74 @@ const addYouTubeVideo = () => {
   }
 };
 
-// Code block functionality
-const toggleCodeBlock = () => {
-  if (editor.value) {
-    editor.value.chain().focus().toggleCodeBlock().run();
+// Code block functionality - 모바일 안전 버전
+let codeBlockToggling = false;
+const lastCodeBlockToggle = ref(0);
+
+const toggleCodeBlock = (event?: Event) => {
+  // 중복 실행 방지
+  if (codeBlockToggling || !editor.value) return;
+  
+  // 모바일에서 빠른 연속 클릭 방지 (300ms 디바운스)
+  const now = Date.now();
+  if (now - lastCodeBlockToggle.value < 300) {
+    console.log('Code block toggle: too fast, ignoring');
+    return;
+  }
+  lastCodeBlockToggle.value = now;
+  
+  try {
+    codeBlockToggling = true;
+    
+    // 이벤트가 있으면 기본 동작 방지
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    }
+    
+    console.log('Toggling code block...');
+    
+    // 안전한 코드 블록 토글 (포커스 없이)
+    const result = editor.value.chain().toggleCodeBlock().run();
+    console.log('Code block toggle result:', result);
+    
+    // 약간의 지연 후 코드 블록 감지
     detectCodeBlocksWithDelay(editor.value);
+    
+  } catch (error) {
+    console.error('Code block toggle error:', error);
+  } finally {
+    // 중복 클릭 방지를 위한 딜레이
+    setTimeout(() => {
+      codeBlockToggling = false;
+    }, 400);
+  }
+};
+
+// 모바일 터치 전용 핸들러 - 더 안전한 버전
+const handleCodeBlockTouch = (event: TouchEvent) => {
+  console.log('Code block touch event:', event.type);
+  
+  // 터치 이벤트의 기본 동작 완전 차단
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  
+  // touchend에서만 실행하고, 터치가 버튼 영역에서 끝났는지 확인
+  if (event.type === 'touchend') {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // 터치가 버튼 내부에서 끝났는지 확인
+    if (target && (target.closest('.toolbar-btn') || target.classList.contains('toolbar-btn'))) {
+      console.log('Valid touch end on code block button');
+      // 약간의 지연을 둬서 다른 이벤트와 충돌 방지
+      setTimeout(() => {
+        toggleCodeBlock(event);
+      }, 50);
+    }
   }
 };
 

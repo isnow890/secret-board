@@ -1,23 +1,47 @@
-// composables/usePostActions.ts
-import { ref } from 'vue'
+import { ref, readonly } from 'vue'
 
+/**
+ * @description 게시글 상세 페이지에서의 사용자 액션(수정, 삭제, 뒤로가기 등)을 관리하는 컴포저블입니다.
+ * 비밀번호 인증, 모달 관리, 페이지 이동 로직을 포함합니다.
+ * @param {string} postId - 현재 게시글의 ID
+ */
 export const usePostActions = (postId: string) => {
   const router = useRouter()
   
-  // 상태 관리
+  /**
+   * @description 삭제 확인 모달의 표시 여부
+   * @type {import('vue').Ref<boolean>}
+   */
   const showDeleteModal = ref(false)
+  
+  /**
+   * @description 비밀번호 확인 다이얼로그 컴포넌트의 참조
+   */
   const deletePasswordDialogRef = ref()
+  
+  /**
+   * @description 수정용 비밀번호 확인 모달의 표시 여부
+   * @type {import('vue').Ref<boolean>}
+   */
   const showPasswordModal = ref(false)
+  
+  /**
+   * @description 현재 삭제가 진행 중인지 여부
+   * @type {import('vue').Ref<boolean>}
+   */
   const isDeleting = ref(false)
 
-  // 게시글 수정을 위한 비밀번호 인증
+  /**
+   * @description 게시글 수정을 위해 비밀번호를 인증하고, 성공 시 세션 스토리지에 인증 정보를 저장합니다.
+   * @param {string} password - 사용자가 입력한 비밀번호
+   * @returns {Promise<boolean>} 인증 성공 여부
+   */
   const authenticateForEdit = async (password: string): Promise<boolean> => {
     try {
       const { verifyPostPassword } = usePost(postId)
       const isValid = await verifyPostPassword(password)
 
       if (isValid && process.client) {
-        // 세션 스토리지에 인증 정보 저장 (1시간 유효)
         const authKey = `edit_auth_${postId}`
         const authData = {
           password,
@@ -33,15 +57,18 @@ export const usePostActions = (postId: string) => {
     }
   }
 
-  // 목록으로 돌아가기
+  /**
+   * @description 브라우저의 이전 페이지로 이동합니다.
+   */
   const goBack = () => {
     router.back()
   }
 
-  // 수정 페이지로 이동
+  /**
+   * @description 게시글 수정 페이지로 이동합니다. 세션 스토리지에 유효한 인증 정보가 있으면 바로 이동하고, 없으면 비밀번호 확인 모달을 띄웁니다.
+   */
   const goToEdit = async () => {
     try {
-      // 기존 인증 정보 확인
       const authKey = `edit_auth_${postId}`
       const authData = process.client ? sessionStorage.getItem(authKey) : null
       
@@ -51,13 +78,11 @@ export const usePostActions = (postId: string) => {
         try {
           const { timestamp } = JSON.parse(authData)
           const now = Date.now()
-          const oneHour = 60 * 60 * 1000 // 1시간
+          const oneHour = 60 * 60 * 1000
           
-          // 1시간 이내인지 확인
           if (now - timestamp < oneHour) {
             isAuthenticated = true
           } else {
-            // 만료된 인증 정보 삭제
             sessionStorage.removeItem(authKey)
           }
         } catch (error) {
@@ -67,17 +92,11 @@ export const usePostActions = (postId: string) => {
       }
 
       if (isAuthenticated) {
-        // 인증된 경우 바로 수정 페이지로 이동
-        // beforeunload 이벤트 일시적으로 제거하여 경고 방지
         const originalBeforeUnload = window.onbeforeunload
         window.onbeforeunload = null
-        
         await navigateTo(`/post/${postId}/edit`)
-        
-        // 이동 후 원래 beforeunload 이벤트 복원 (필요한 경우)
         window.onbeforeunload = originalBeforeUnload
       } else {
-        // 인증이 필요한 경우 비밀번호 확인 모달 표시
         showPasswordModal.value = true
       }
     } catch (error) {
@@ -90,32 +109,37 @@ export const usePostActions = (postId: string) => {
     }
   }
 
-  // 비밀번호 확인 후 수정 페이지로 이동
+  /**
+   * @description 비밀번호 확인 모달에서 확인 버튼을 눌렀을 때 실행됩니다. 비밀번호 인증 후 수정 페이지로 이동합니다.
+   * @param {string} password - 사용자가 입력한 비밀번호
+   * @throws {Error} 비밀번호가 일치하지 않을 경우 에러 발생
+   */
   const handleEditPasswordConfirm = async (password: string) => {
     const isValid = await authenticateForEdit(password)
     
     if (isValid) {
       showPasswordModal.value = false
-      
-      // beforeunload 이벤트 일시적으로 제거하여 경고 방지
       const originalBeforeUnload = window.onbeforeunload
       window.onbeforeunload = null
-      
       await navigateTo(`/post/${postId}/edit`)
-      
-      // 이동 후 원래 beforeunload 이벤트 복원 (필요한 경우)
       window.onbeforeunload = originalBeforeUnload
     } else {
       throw new Error('비밀번호가 일치하지 않습니다.')
     }
   }
 
-  // 삭제 확인
+  /**
+   * @description 게시글 삭제 확인 모달을 표시합니다.
+   */
   const showDeleteConfirmation = () => {
     showDeleteModal.value = true
   }
 
-  // 삭제 실행
+  /**
+   * @description 비밀번호를 확인하고 게시글 삭제를 실행합니다.
+   * @param {string} password - 사용자가 입력한 비밀번호
+   * @throws {Error} 삭제 실패 시 에러 발생
+   */
   const handleDelete = async (password: string) => {
     isDeleting.value = true
     
@@ -124,32 +148,40 @@ export const usePostActions = (postId: string) => {
       await deletePost(password)
       
       showDeleteModal.value = false
-      
-      // 홈으로 이동
       await navigateTo('/')
     } catch (error: any) {
       console.error('게시글 삭제 실패:', error)
-      
       const errorMessage = error.statusMessage || error.data?.message || '게시글 삭제에 실패했습니다.'
-      
       useToast().add({
         title: '삭제 실패',
         description: errorMessage,
         color: 'red',
       })
-      
       throw error
     } finally {
       isDeleting.value = false
     }
   }
 
-  // 삭제 취소
+  /**
+   * @description 게시글 삭제를 취소하고 모달을 닫습니다.
+   */
   const cancelDelete = () => {
     showDeleteModal.value = false
   }
 
-  // 작성자 여부 확인 (비밀번호 기반)
+  /**
+   * @description 비밀번호 확인 모달을 취소하고 닫습니다.
+   */
+  const cancelPasswordModal = () => {
+    showPasswordModal.value = false
+  }
+
+  /**
+   * @description 입력된 비밀번호가 게시글 작성자의 비밀번호와 일치하는지 확인합니다.
+   * @param {string} password - 확인할 비밀번호
+   * @returns {Promise<boolean>} 일치 여부
+   */
   const checkIsAuthor = async (password: string): Promise<boolean> => {
     try {
       const { verifyPostPassword } = usePost(postId)
@@ -161,19 +193,21 @@ export const usePostActions = (postId: string) => {
   }
 
   return {
-    // 상태
-    showDeleteModal,
+    /** 삭제 확인 모달 표시 상태 */
+    showDeleteModal: readonly(showDeleteModal),
+    /** 비밀번호 확인 다이얼로그 참조 */
     deletePasswordDialogRef,
-    showPasswordModal,
-    isDeleting,
-
-    // 메서드
+    /** 수정용 비밀번호 모달 표시 상태 */
+    showPasswordModal: readonly(showPasswordModal),
+    /** 삭제 처리 중 상태 */
+    isDeleting: readonly(isDeleting),
     goBack,
     goToEdit,
     handleEditPasswordConfirm,
     showDeleteConfirmation,
     handleDelete,
     cancelDelete,
+    cancelPasswordModal,
     checkIsAuthor,
     authenticateForEdit,
   }

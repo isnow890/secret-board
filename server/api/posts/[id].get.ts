@@ -1,7 +1,17 @@
-// server/api/posts/[id].get.ts
+/**
+ * @description 특정 ID의 단일 게시글 상세 정보를 조회하는 API 엔드포인트입니다.
+ * 삭제된 게시글도 접근 가능하며, 파생 필드(미리보기, 첨부파일 메타데이터)를 계산하여 반환합니다.
+ * @see /api/posts/:id
+ * @method GET
+ * @param {object} event - H3 이벤트 객체
+ * @returns {Promise<object>} 게시글 상세 정보를 포함하는 응답 객체
+ * @throws {400} 게시글 ID가 없거나 형식이 올바르지 않은 경우
+ * @throws {404} 해당 ID의 게시글을 찾을 수 없는 경우
+ * @throws {500} 서버 오류 발생 시
+ */
 import { serverSupabaseClient } from "#supabase/server";
 import type { Database } from "~/types/supabase";
-import { stripHtml } from "~/server/utils/textUtils";
+import { stripHtml } from "~/server/utils";
 
 export default defineEventHandler(async (event) => {
   try {
@@ -26,7 +36,7 @@ export default defineEventHandler(async (event) => {
 
     const supabase = await serverSupabaseClient<Database>(event);
 
-    // 게시글 조회 (삭제된 게시글 제외)
+    // 게시글 조회 (삭제된 게시글도 포함 - 인기글에서 접근 가능)
     const { data: post, error } = await supabase
       .from("posts")
       // 실제 존재하는 컬럼만 선택, is_deleted도 포함
@@ -43,11 +53,12 @@ export default defineEventHandler(async (event) => {
         created_at,
         updated_at,
         last_comment_at,
-        is_deleted
+        is_deleted,
+        ai_summary,
+        summary_generated_at
       `
       )
       .eq("id", postId)
-      .eq("is_deleted", false)
       .single();
 
     if (error) {
@@ -70,8 +81,8 @@ export default defineEventHandler(async (event) => {
     const text =
       typeof post?.content === "string" ? stripHtml(post.content) : "";
     const preview = text.slice(0, 200);
-    const files = Array.isArray((post as any)?.attached_files)
-      ? (post as any).attached_files
+    const files = Array.isArray(post?.attached_files)
+      ? post.attached_files
       : [];
     const hasAttachments = files.length > 0;
     const attachmentCount = files.length;
@@ -81,7 +92,7 @@ export default defineEventHandler(async (event) => {
       ? {
           id: post.id,
           title: post.title,
-          nickname: (post as any).nickname,
+          nickname: post.nickname,
           content: post.content,
           view_count: post.view_count,
           like_count: post.like_count,
@@ -89,13 +100,18 @@ export default defineEventHandler(async (event) => {
           created_at: post.created_at,
           updated_at: post.updated_at,
           last_comment_at: post.last_comment_at,
-          attached_files: (post as any).attached_files ?? [],
-          is_deleted: (post as any).is_deleted || false,
+          attached_files: post.attached_files ?? [],
+          is_deleted: post.is_deleted || false,
+          ai_summary: post.ai_summary || null,
+          summary_generated_at: post.summary_generated_at || null,
           preview,
           hasAttachments,
           attachmentCount,
         }
       : null;
+
+    // UTF-8 인코딩 명시적 설정
+    setHeader(event, 'Content-Type', 'application/json; charset=utf-8');
 
     return {
       success: true,

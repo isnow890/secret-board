@@ -57,6 +57,7 @@
               data-ms-editor="false"
               :name="`verify-password-${randomSuffix}`"
               role="textbox"
+              class="w-full"
               @keyup.enter="handleConfirm"
               @keyup.esc="handleCancel"
               @input="clearError"

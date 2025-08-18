@@ -34,13 +34,15 @@
         <div class="p-3">
           <h4
             class="text-sm font-medium transition-colors line-clamp-2 leading-tight mb-2"
-            :class="
-              isViewed(post.id)
-                ? 'text-text-tertiary group-hover:text-text-secondary'
-                : 'text-text-primary group-hover:text-primary-500'
-            "
+            :class="[
+              post.is_deleted 
+                ? 'line-through text-text-quaternary opacity-60'
+                : isViewed(post.id)
+                  ? 'text-text-tertiary group-hover:text-text-secondary'
+                  : 'text-text-primary group-hover:text-primary-500'
+            ]"
           >
-            {{ post.title }}
+            {{ post.is_deleted ? '[삭제됨] ' + post.title : post.title }}
           </h4>
           <div
             class="flex items-center justify-between text-xs text-text-tertiary"

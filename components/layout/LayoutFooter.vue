@@ -53,7 +53,7 @@
 
             <!-- GitHub Link -->
             <a
-              href="https://github.com/isnow890/hit-secret"
+              href="https://github.com/eumc-hit/hit-secret"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center gap-2 px-2 py-1.5 text-text-tertiary hover:text-text-secondary transition-all duration-200 rounded-md hover:bg-interactive-hover"

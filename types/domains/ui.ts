@@ -1,49 +1,68 @@
 // types/domains/ui.ts
 import type { SortDirection } from '../shared/common';
 
-// Toast 관련 (실제 useToast에서 사용하는 구조)
+/**
+ * @description Toast 알림 메시지의 상세 정보를 나타내는 인터페이스
+ */
 export interface Toast {
+  /** Toast의 고유 ID */
   id: string;
+  /** Toast 제목 */
   title: string;
+  /** Toast 상세 설명 */
   description?: string;
+  /** 색상 테마 */
   color?: "red" | "gray" | "blue" | "green";
+  /** 스타일 변형 */
   variant?: "default" | "success" | "warning" | "error" | "info";
+  /** 표시 시간 (ms) */
   timeout?: number;
 }
 
-// 기본 토스트 (간단한 버전)
+/**
+ * @description 간단한 형태의 Toast 알림 메시지 인터페이스
+ */
 export interface SimpleToast {
+  /** Toast의 고유 ID */
   id: string;
+  /** 표시될 메시지 */
   message: string;
+  /** Toast 타입 */
   type: 'success' | 'error' | 'warning' | 'info';
+  /** 표시 시간 (ms) */
   duration?: number;
+  /** 사용자가 닫기 전까지 계속 표시할지 여부 */
   persistent?: boolean;
 }
 
-// 통계 정보
+/**
+ * @description 사이드바에 표시될 게시판 통계 정보 인터페이스
+ */
 export interface BoardStats {
+  /** 총 게시글 수 */
   totalPosts: number;
+  /** 총 댓글 수 */
   totalComments: number;
+  /** 오늘 작성된 게시글 수 */
   todayPosts: number;
+  /** 오늘 작성된 댓글 수 */
   todayComments: number;
+  /** 마지막 업데이트 시간 */
+  lastUpdated: string;
 }
 
-// 공통 크기 타입
 /**
- * 컴포넌트 크기 옵션
- * @description 모든 UI 컴포넌트에서 사용되는 표준 크기
+ * @description UI 컴포넌트의 크기를 정의하는 타입
  */
 export type ComponentSize = 'sm' | 'md' | 'lg';
 
 /**
- * 버튼 변형 타입
- * @description 버튼의 스타일 변형
+ * @description 버튼의 시각적 스타일을 정의하는 타입
  */
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 
 /**
- * 공통 버튼 속성
- * @description 모든 버튼 컴포넌트에서 사용되는 기본 Props
+ * @description 모든 버튼 컴포넌트의 기본 속성을 정의하는 인터페이스
  */
 export interface BaseButtonProps {
   /** 버튼 스타일 변형 */
@@ -52,30 +71,28 @@ export interface BaseButtonProps {
   size?: ComponentSize;
   /** 비활성화 여부 */
   disabled?: boolean;
-  /** 로딩 상태 표시 */
+  /** 로딩 상태 표시 여부 */
   loading?: boolean;
-  /** 전체 너비 사용 */
+  /** 부모 요소의 전체 너비를 차지할지 여부 */
   fullWidth?: boolean;
-  /** 버튼 타입 */
+  /** HTML button 타입 */
   type?: 'button' | 'submit' | 'reset';
 }
 
 /**
- * 입력 필드 타입
- * @description HTML input type 속성
+ * @description HTML <input> 요소의 type 속성을 정의하는 타입
  */
 export type InputType = 'text' | 'email' | 'password' | 'number' | 'search' | 'tel' | 'url';
 
 /**
- * 공통 입력 속성
- * @description 모든 입력 컴포넌트에서 사용되는 기본 Props
+ * @description 모든 입력 필드 컴포넌트의 기본 속성을 정의하는 인터페이스
  */
 export interface BaseInputProps {
-  /** 입력값 */
+  /** 입력 필드의 현재 값 */
   modelValue?: string | number;
   /** 입력 필드 타입 */
   type?: InputType;
-  /** 플레이스홀더 텍스트 */
+  /** 입력 필드에 표시될 안내 문구 */
   placeholder?: string;
   /** 비활성화 여부 */
   disabled?: boolean;
@@ -83,78 +100,73 @@ export interface BaseInputProps {
   readonly?: boolean;
   /** 필수 입력 여부 */
   required?: boolean;
-  /** 에러 메시지 */
+  /** 유효성 검사 실패 시 표시될 에러 메시지 */
   error?: string;
-  /** 도움말 텍스트 */
+  /** 입력 필드 아래에 표시될 도움말 텍스트 */
   helperText?: string;
   /** 최대 입력 길이 */
   maxlength?: number;
-  /** 입력 크기 */
+  /** 입력 필드 크기 */
   size?: ComponentSize;
 }
 
 /**
- * Select 옵션 인터페이스
- * @description 드롭다운, 셀렉트 컴포넌트에서 사용되는 옵션
+ * @description Select(드롭다운) 컴포넌트의 각 항목을 정의하는 인터페이스
  */
 export interface SelectOption {
-  /** 표시될 라벨 텍스트 */
+  /** 사용자에게 표시될 텍스트 */
   label: string;
-  /** 실제 값 */
+  /** 선택 시 반환될 실제 값 */
   value: string | number;
-  /** 비활성화 여부 */
+  /** 해당 옵션의 비활성화 여부 */
   disabled?: boolean;
-  /** 추가 메타데이터 */
+  /** 추가적인 메타데이터 */
   meta?: Record<string, any>;
 }
 
 /**
- * 네비게이션 아이템 인터페이스
- * @description 네비게이션 바, 메뉴에서 사용되는 아이템
+ * @description 네비게이션 메뉴 항목을 정의하는 인터페이스
  */
 export interface NavigationItem {
-  /** 표시될 라벨 */
+  /** 메뉴에 표시될 텍스트 */
   label: string;
-  /** 링크 URL */
+  /** 이동할 경로 */
   href: string;
-  /** 아이콘 이름 */
+  /** 메뉴 아이콘 */
   icon?: string;
-  /** 활성 상태 여부 */
+  /** 현재 활성화된 메뉴인지 여부 */
   active?: boolean;
-  /** 외부 링크 여부 */
+  /** 외부 링크인지 여부 (새 탭에서 열기) */
   external?: boolean;
-  /** 하위 메뉴 */
+  /** 하위 메뉴 목록 */
   children?: NavigationItem[];
 }
 
 /**
- * 페이지네이션 속성
- * @description 페이지네이션 컴포넌트에서 사용되는 Props
+ * @description 페이지네이션 컴포넌트의 기본 속성을 정의하는 인터페이스
  */
 export interface BasePaginationProps {
   /** 현재 페이지 번호 */
   currentPage: number;
   /** 전체 페이지 수 */
   totalPages: number;
-  /** 더 많은 데이터 존재 여부 */
+  /** 다음 페이지 존재 여부 */
   hasMore?: boolean;
-  /** 로딩 상태 */
+  /** 데이터 로딩 중인지 여부 */
   loading?: boolean;
-  /** 페이지당 아이템 수 */
+  /** 페이지 당 항목 수 */
   perPage?: number;
-  /** 전체 아이템 수 */
+  /** 전체 항목 수 */
   totalItems?: number;
 }
 
 /**
- * 모달 크기 타입
- * @description 모달 컴포넌트에서 사용되는 크기
+ * @description 모달 컴포넌트의 크기를 정의하는 타입
  */
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 /**
- * 모달 속성
- * @description 모달, 다이얼로그 컴포넌트에서 사용되는 Props
+ * @description 모달 및 다이얼로그 컴포넌트의 기본 속성을 정의하는 인터페이스
  */
 export interface BaseModalProps {
   /** 모달 표시 여부 */
@@ -165,37 +177,33 @@ export interface BaseModalProps {
   size?: ModalSize;
   /** 닫기 버튼 표시 여부 */
   closable?: boolean;
-  /** 외부 클릭으로 닫기 방지 */
+  /** 모달 외부 클릭 시 닫히지 않도록 설정 */
   persistent?: boolean;
-  /** 스크롤 가능 여부 */
+  /** 모달 내용이 길 경우 스크롤 가능하도록 설정 */
   scrollable?: boolean;
-  /** 배경 오버레이 표시 여부 */
+  /** 뒷 배경 어둡게 처리 여부 */
   overlay?: boolean;
 }
 
 /**
- * 상태 타입
- * @description UI 컴포넌트에서 사용되는 일반적인 상태
+ * @description UI 컴포넌트의 비동기 작업 상태를 나타내는 타입
  */
 export type UIState = 'idle' | 'loading' | 'success' | 'error' | 'warning';
 
-// SortDirection은 shared/common.ts에서 import
-
 /**
- * 테이블 컬럼 정의
- * @description 데이터 테이블에서 사용되는 컬럼 설정
+ * @description 데이터 테이블의 컬럼 속성을 정의하는 인터페이스
  */
 export interface TableColumn {
-  /** 컬럼 키 */
+  /** 데이터를 참조하는 고유 키 */
   key: string;
-  /** 표시될 라벨 */
+  /** 테이블 헤더에 표시될 라벨 */
   label: string;
   /** 정렬 가능 여부 */
   sortable?: boolean;
   /** 컬럼 너비 */
   width?: number | string;
-  /** 정렬 방향 */
+  /** 현재 정렬 방향 */
   sortDirection?: SortDirection;
-  /** 커스텀 렌더 함수 */
+  /** 셀 내용을 커스텀 렌더링하는 함수 */
   render?: (value: any, row: any) => string | any;
 }

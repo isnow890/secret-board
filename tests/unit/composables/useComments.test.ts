@@ -172,6 +172,7 @@ describe("useComments Composable", () => {
       const result = await createComment({
         postId: "post-1",
         content: "New comment",
+        nickname: "TestUser",
         password: "test123",
       });
 
@@ -207,6 +208,7 @@ describe("useComments Composable", () => {
         createComment({
           postId: "post-1",
           content: "New comment",
+          nickname: "TestUser",
           password: "test123",
         })
       ).rejects.toThrow();
@@ -252,6 +254,7 @@ describe("useComments Composable", () => {
         {
           postId: "post-1",
           content: "New reply",
+          nickname: "TestUser",
           password: "test123",
           parentId: "parent-1",
         },
@@ -308,6 +311,7 @@ describe("useComments Composable", () => {
         {
           postId: "post-1",
           content: "New nested reply",
+          nickname: "TestUser",
           password: "test123",
           parentId: "parent-1",
         },

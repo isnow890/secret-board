@@ -78,16 +78,7 @@
 </template>
 
 <script setup lang="ts">
-interface RecentComment {
-  id: string;
-  content: string;
-  nickname: string;
-  post_id: string;
-  post_title: string;
-  is_author: boolean;
-  depth: number;
-  created_at: string;
-}
+import type { RecentComment } from '~/types/domains/comment';
 
 // useSidebar composable 사용
 const { fetchRecentComments } = useSidebar();

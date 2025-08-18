@@ -34,7 +34,16 @@ export type {
   PaginationInfo,
   ApiError,
   HttpMethod,
-  RequestOptions
+  RequestOptions,
+  PostListResponse,
+  PostDetailResponse,
+  PostCreateResponse,
+  PostEditResponse,
+  PostDeleteResponse,
+  PostPasswordVerifyResponse,
+  PostViewResponse,
+  CommentListResponse,
+  LikeResponse
 } from './domains/api';
 
 // Auth 도메인
@@ -45,6 +54,14 @@ export type {
   PasswordVerifyRequest,
   PasswordVerifyResponse
 } from './domains/auth';
+
+// Fetch 도메인
+export type {
+  $Fetch,
+  FetchRequest,
+  FetchOptions,
+  FetchResponse
+} from './domains/fetch';
 
 // UI 도메인
 export type {

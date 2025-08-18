@@ -1,11 +1,20 @@
-// server/api/comments/index.post.ts
-import bcrypt from "bcryptjs";
+/**
+ * @description 댓글 작성 API (리팩토링 완료)
+ * 새로운 유틸리티 함수들을 사용하여 중복 코드를 제거하고 안전성을 향상시켰습니다.
+ * 계층형 댓글 깊이 관리, 글쓴이 검증 등의 기능을 포함합니다.
+ */
 import { z } from "zod";
-import { serverSupabaseClient } from "#supabase/server";
-import type { Database } from "~/types/supabase";
-import { withApiKeyValidation } from "~/server/utils/apiKeyValidation";
+import { 
+  validateUUIDOrThrow,
+  createSuccessResponse,
+  CommonErrors,
+  getSupabaseClient,
+  hashPassword,
+  comparePassword,
+  createApiHandler
+} from '~/server/utils';
 
-const CreateCommentSchema = z.object({
+const createCommentSchema = z.object({
   postId: z.string().uuid(),
   parentId: z.string().uuid().optional(),
   content: z.string().min(1).max(1000),
@@ -21,146 +30,120 @@ const CreateCommentSchema = z.object({
   isAuthor: z.boolean().optional().default(false), // 글쓴이 여부 체크
 });
 
-export default withApiKeyValidation(async (event) => {
-  try {
-    // POST 요청만 허용
-    if (getMethod(event) !== "POST") {
-      throw createError({
-        statusCode: 405,
-        statusMessage: "Method not allowed",
-      });
-    }
+export default createApiHandler(async (event) => {
+  // 1. 요청 본문 검증
+  const body = await readBody(event);
+  const { postId, parentId, content, nickname, password, isAuthor } = createCommentSchema.parse(body);
 
-    const body = await readBody(event);
+  // 2. UUID 검증
+  validateUUIDOrThrow(postId, '게시글 ID');
+  if (parentId) {
+    validateUUIDOrThrow(parentId, '부모 댓글 ID');
+  }
 
-    // 유효성 검사
-    const validation = CreateCommentSchema.safeParse(body);
-    if (!validation.success) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Invalid request data",
-        data: validation.error.issues,
-      });
-    }
+  // 3. 비밀번호 해시화
+  const passwordHash = await hashPassword(password);
 
-    const { postId, parentId, content, nickname, password, isAuthor } =
-      validation.data;
+  // 4. Supabase 클라이언트
+  const supabase = await getSupabaseClient(event);
 
-    // 비밀번호 해시화
-    const passwordHash = await bcrypt.hash(password, 10);
-
-    // Supabase 클라이언트
-    const supabase = await serverSupabaseClient<Database>(event);
-
-    // 부모 댓글이 있는 경우 depth 검증
-    let depth = 0;
-    if (parentId) {
-      const { data: parentComment } = await supabase
-        .from("comments")
-        .select("depth")
-        .eq("id", parentId)
-        .single();
-
-      if (!parentComment) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: "Parent comment not found",
-        });
-      }
-
-      depth = (parentComment.depth || 0) + 1;
-
-      // 최대 깊이 제한 (성능과 UX를 위해 최대 10단계까지 허용)
-      if (depth > 10) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: "댓글 깊이가 너무 깊습니다",
-        });
-      }
-    }
-
-    // 게시글 존재 확인 및 글쓴이 검증을 위한 정보 조회
-    const { data: post } = await supabase
-      .from("posts")
-      .select("id, password_hash")
-      .eq("id", postId)
+  // 5. 부모 댓글이 있는 경우 depth 검증
+  let depth = 0;
+  if (parentId) {
+    const { data: parentComment } = await supabase
+      .from("comments")
+      .select("depth")
+      .eq("id", parentId)
       .single();
 
-    if (!post) {
+    if (!parentComment) {
       throw createError({
         statusCode: 404,
-        statusMessage: "Post not found",
+        statusMessage: "부모 댓글을 찾을 수 없습니다.",
       });
     }
 
-    // 글쓴이 여부 검증
-    let verifiedAsAuthor = false;
-    if (isAuthor) {
-      verifiedAsAuthor = await bcrypt.compare(password, post.password_hash);
+    depth = (parentComment.depth || 0) + 1;
 
-      // 글쓴이라고 주장했지만 비밀번호가 틀린 경우 에러 반환
-      if (!verifiedAsAuthor) {
-        throw createError({
-          statusCode: 401,
-          statusMessage: "글쓴이 비밀번호가 틀렸습니다.",
-        });
-      }
-    }
-
-    // 댓글 생성
-    const { data: comment, error } = await supabase
-      .from("comments")
-      .insert({
-        post_id: postId,
-        parent_id: parentId || null,
-        content,
-        nickname: nickname.trim(),
-        password_hash: passwordHash,
-        depth,
-        is_author: verifiedAsAuthor,
-      })
-      .select(
-        `
-        id,
-        post_id,
-        parent_id,
-        content,
-        nickname,
-        password_hash,
-        depth,
-        like_count,
-        reply_count,
-        is_author,
-        is_deleted,
-        deleted_at,
-        created_at,
-        updated_at
-      `
-      )
-      .single();
-
-    if (error) {
-      console.error("댓글 생성 에러:", error);
+    // 최대 깊이 제한 (성능과 UX를 위해 최대 10단계까지 허용)
+    if (depth > 10) {
       throw createError({
-        statusCode: 500,
-        statusMessage: "Failed to create comment",
+        statusCode: 400,
+        statusMessage: "댓글 깊이가 너무 깊습니다",
       });
     }
+  }
 
-    return {
-      success: true,
-      data: comment,
-    };
-  } catch (error: any) {
-    console.error("댓글 생성 API 에러:", error);
+  // 6. 게시글 존재 확인 및 글쓴이 검증을 위한 정보 조회
+  const { data: post } = await supabase
+    .from("posts")
+    .select("id, password_hash")
+    .eq("id", postId)
+    .single();
 
-    if (error.statusCode) {
-      throw error;
+  if (!post) {
+    throw CommonErrors.NotFound.Post();
+  }
+
+  // 7. 글쓴이 여부 검증
+  let verifiedAsAuthor = false;
+  if (isAuthor) {
+    verifiedAsAuthor = await comparePassword(password, post.password_hash);
+
+    // 글쓴이라고 주장했지만 비밀번호가 틀린 경우 에러 반환
+    if (!verifiedAsAuthor) {
+      throw createError({
+        statusCode: 401,
+        statusMessage: "글쓴이 비밀번호가 틀렸습니다.",
+      });
     }
+  }
 
+  // 8. 댓글 생성
+  const { data: comment, error } = await supabase
+    .from("comments")
+    .insert({
+      post_id: postId,
+      parent_id: parentId || null,
+      content,
+      nickname: nickname.trim(),
+      password_hash: passwordHash,
+      depth,
+      is_author: verifiedAsAuthor,
+    })
+    .select(
+      `
+      id,
+      post_id,
+      parent_id,
+      content,
+      nickname,
+      password_hash,
+      depth,
+      like_count,
+      reply_count,
+      is_author,
+      is_deleted,
+      deleted_at,
+      created_at,
+      updated_at
+    `
+    )
+    .single();
+
+  if (error) {
+    console.error("댓글 생성 에러:", error);
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal server error",
+      statusMessage: "댓글 생성에 실패했습니다.",
     });
   }
+
+  // 9. 성공 응답
+  return createSuccessResponse(comment, "댓글이 작성되었습니다.");
+
+}, {
+  method: 'POST',
+  requireAuth: true,
+  customErrorMessage: '댓글 작성 중 오류가 발생했습니다.'
 });

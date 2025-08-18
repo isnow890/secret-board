@@ -30,6 +30,10 @@
   min-width: 2rem;
   font-size: 0.875rem;
   font-weight: 500;
+  /* 모바일 터치 최적화 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .toolbar-btn:disabled {
@@ -57,6 +61,15 @@
 .ProseMirror {
   @apply outline-none text-text-primary;
   min-height: 200px;
+  
+  /* 안드로이드 터치 및 키보드 최적화 */
+  -webkit-touch-callout: none;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ProseMirror.is-editor-empty::before {
@@ -140,6 +153,14 @@
   font-size: 0.875rem;
   line-height: 1.5;
   overflow: visible; /* Allow absolute positioned header to show */
+  
+  /* 안드로이드 터치 최적화 */
+  -webkit-touch-callout: none;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
 }
 
 .ProseMirror .editor-code-block pre {

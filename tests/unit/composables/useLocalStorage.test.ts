@@ -4,6 +4,16 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 // Mock console.error
 const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
+// Type the localStorage mock for better type safety
+interface LocalStorageMock {
+  getItem: any
+  setItem: any
+  removeItem: any
+  clear: any
+}
+
+const mockLocalStorage = localStorage as unknown as LocalStorageMock
+
 describe('useLocalStorage Composable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -12,7 +22,7 @@ describe('useLocalStorage Composable', () => {
   describe('getStorageData', () => {
     it('should return parsed data from localStorage', async () => {
       const testData = ['post1', 'post2']
-      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(testData))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(testData))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { getStorageData } = useLocalStorage()
@@ -24,7 +34,7 @@ describe('useLocalStorage Composable', () => {
     })
 
     it('should return fallback when localStorage is empty', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(null)
+      mockLocalStorage.getItem.mockReturnValue(null)
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { getStorageData } = useLocalStorage()
@@ -35,7 +45,7 @@ describe('useLocalStorage Composable', () => {
     })
 
     it('should return fallback on JSON parse error', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue('invalid-json')
+      mockLocalStorage.getItem.mockReturnValue('invalid-json')
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { getStorageData } = useLocalStorage()
@@ -77,11 +87,11 @@ describe('useLocalStorage Composable', () => {
       
       setStorageData('board_viewed_posts', testData)
       
-      expect(vi.mocked(localStorage).setItem).toHaveBeenCalledWith('board_viewed_posts', JSON.stringify(testData))
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('board_viewed_posts', JSON.stringify(testData))
     })
 
     it('should handle setItem error', async () => {
-      vi.mocked(localStorage).setItem.mockImplementation(() => {
+      mockLocalStorage.setItem.mockImplementation(() => {
         throw new Error('Storage quota exceeded')
       })
       
@@ -104,7 +114,7 @@ describe('useLocalStorage Composable', () => {
       
       setStorageData('board_viewed_posts', ['post1'])
       
-      expect(vi.mocked(localStorage).setItem).not.toHaveBeenCalled()
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
       
       // Restore
       Object.defineProperty(global, 'process', {
@@ -116,31 +126,31 @@ describe('useLocalStorage Composable', () => {
 
   describe('addViewedPost', () => {
     it('should add new post to viewed list', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue('[]')
+      mockLocalStorage.getItem.mockReturnValue('[]')
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { addViewedPost } = useLocalStorage()
       
       addViewedPost('post1')
       
-      expect(vi.mocked(localStorage).setItem).toHaveBeenCalledWith('board_viewed_posts', JSON.stringify(['post1']))
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('board_viewed_posts', JSON.stringify(['post1']))
     })
 
     it('should not add duplicate post', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['post1']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['post1']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { addViewedPost } = useLocalStorage()
       
       addViewedPost('post1')
       
-      expect(vi.mocked(localStorage).setItem).not.toHaveBeenCalled()
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
     })
   })
 
   describe('isPostViewed', () => {
     it('should return true for viewed post', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['post1', 'post2']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['post1', 'post2']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { isPostViewed } = useLocalStorage()
@@ -151,7 +161,7 @@ describe('useLocalStorage Composable', () => {
     })
 
     it('should return false for unviewed post', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['post1']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['post1']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { isPostViewed } = useLocalStorage()
@@ -164,7 +174,7 @@ describe('useLocalStorage Composable', () => {
 
   describe('togglePostLike', () => {
     it('should add post to liked list', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue('[]')
+      mockLocalStorage.getItem.mockReturnValue('[]')
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { togglePostLike } = useLocalStorage()
@@ -172,11 +182,11 @@ describe('useLocalStorage Composable', () => {
       const result = togglePostLike('post1')
       
       expect(result).toBe(true)
-      expect(vi.mocked(localStorage).setItem).toHaveBeenCalledWith('board_liked_posts', JSON.stringify(['post1']))
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('board_liked_posts', JSON.stringify(['post1']))
     })
 
     it('should remove post from liked list', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['post1', 'post2']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['post1', 'post2']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { togglePostLike } = useLocalStorage()
@@ -184,13 +194,13 @@ describe('useLocalStorage Composable', () => {
       const result = togglePostLike('post1')
       
       expect(result).toBe(false)
-      expect(vi.mocked(localStorage).setItem).toHaveBeenCalledWith('board_liked_posts', JSON.stringify(['post2']))
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('board_liked_posts', JSON.stringify(['post2']))
     })
   })
 
   describe('isPostLiked', () => {
     it('should return true for liked post', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['post1', 'post2']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['post1', 'post2']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { isPostLiked } = useLocalStorage()
@@ -201,7 +211,7 @@ describe('useLocalStorage Composable', () => {
     })
 
     it('should return false for unliked post', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['post1']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['post1']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { isPostLiked } = useLocalStorage()
@@ -214,31 +224,31 @@ describe('useLocalStorage Composable', () => {
 
   describe('addLikedComment', () => {
     it('should add new comment to liked list', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue('[]')
+      mockLocalStorage.getItem.mockReturnValue('[]')
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { addLikedComment } = useLocalStorage()
       
       addLikedComment('comment1')
       
-      expect(vi.mocked(localStorage).setItem).toHaveBeenCalledWith('board_liked_comments', JSON.stringify(['comment1']))
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('board_liked_comments', JSON.stringify(['comment1']))
     })
 
     it('should not add duplicate comment', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['comment1']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['comment1']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { addLikedComment } = useLocalStorage()
       
       addLikedComment('comment1')
       
-      expect(vi.mocked(localStorage).setItem).not.toHaveBeenCalled()
+      expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
     })
   })
 
   describe('isCommentLiked', () => {
     it('should return true for liked comment', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['comment1', 'comment2']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['comment1', 'comment2']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { isCommentLiked } = useLocalStorage()
@@ -249,7 +259,7 @@ describe('useLocalStorage Composable', () => {
     })
 
     it('should return false for unliked comment', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify(['comment1']))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify(['comment1']))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { isCommentLiked } = useLocalStorage()
@@ -264,20 +274,20 @@ describe('useLocalStorage Composable', () => {
     it('should update view timestamp', async () => {
       const now = Date.now()
       vi.spyOn(Date, 'now').mockReturnValue(now)
-      vi.mocked(localStorage).getItem.mockReturnValue('{}')
+      mockLocalStorage.getItem.mockReturnValue('{}')
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { updateViewTimestamp } = useLocalStorage()
       
       updateViewTimestamp('post1')
       
-      expect(vi.mocked(localStorage).setItem).toHaveBeenCalledWith('board_view_timestamps', JSON.stringify({ post1: now }))
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith('board_view_timestamps', JSON.stringify({ post1: now }))
     })
   })
 
   describe('canIncrementView', () => {
     it('should return true for first time view', async () => {
-      vi.mocked(localStorage).getItem.mockReturnValue('{}')
+      mockLocalStorage.getItem.mockReturnValue('{}')
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { canIncrementView } = useLocalStorage()
@@ -292,7 +302,7 @@ describe('useLocalStorage Composable', () => {
       const recentTime = now - (1000 * 60 * 60) // 1 hour ago
       
       vi.spyOn(Date, 'now').mockReturnValue(now)
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify({ post1: recentTime }))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify({ post1: recentTime }))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { canIncrementView } = useLocalStorage()
@@ -307,7 +317,7 @@ describe('useLocalStorage Composable', () => {
       const oldTime = now - (25 * 60 * 60 * 1000) // 25 hours ago
       
       vi.spyOn(Date, 'now').mockReturnValue(now)
-      vi.mocked(localStorage).getItem.mockReturnValue(JSON.stringify({ post1: oldTime }))
+      mockLocalStorage.getItem.mockReturnValue(JSON.stringify({ post1: oldTime }))
       
       const { useLocalStorage } = await import('../../../composables/useLocalStorage')
       const { canIncrementView } = useLocalStorage()
@@ -332,7 +342,7 @@ describe('useLocalStorage Composable', () => {
     })
 
     it('should handle removeItem error', async () => {
-      vi.mocked(localStorage).removeItem.mockImplementation((key) => {
+      mockLocalStorage.removeItem.mockImplementation((key: string) => {
         if (key === 'board_viewed_posts') {
           throw new Error('Remove failed')
         }
@@ -349,7 +359,7 @@ describe('useLocalStorage Composable', () => {
 
   describe('exportData', () => {
     it('should export all localStorage data', async () => {
-      vi.mocked(localStorage).getItem.mockImplementation((key) => {
+      mockLocalStorage.getItem.mockImplementation((key: string) => {
         switch (key) {
           case 'board_viewed_posts':
             return JSON.stringify(['post1'])

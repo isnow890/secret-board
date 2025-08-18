@@ -103,6 +103,7 @@ export default defineNuxtConfig({
     // 서버 전용 (비공개)
     supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY,
     serverApiKey: process.env.SERVER_API_KEY,
+    googleAiStudioApiKey: process.env.GOOGLE_AI_STUDIO_API_KEY,
 
     // 클라이언트에서도 접근 가능 (공개)
     public: {

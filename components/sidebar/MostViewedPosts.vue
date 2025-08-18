@@ -46,14 +46,14 @@
               </span>
               <span class="flex items-center">
                 <Icon name="lucide:eye" class="w-3 h-3 mr-1" />
-                {{ formatNumber(post.view_count) }}
+                {{ formatNumber(post.view_count || 0) }}
               </span>
               <span class="flex items-center">
                 <Icon name="lucide:message-circle" class="w-3 h-3 mr-1" />
-                {{ formatNumber(post.comment_count) }}
+                {{ formatNumber(post.comment_count || 0) }}
               </span>
             </div>
-            <span class="flex-shrink-0">{{ formatTimeAgo(post.created_at) }}</span>
+            <span class="flex-shrink-0">{{ formatTimeAgo(post.created_at || '') }}</span>
           </div>
         </div>
       </div>

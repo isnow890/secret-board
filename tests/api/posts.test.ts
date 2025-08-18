@@ -2,7 +2,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // Mock fetch globally
-const mockFetch = vi.fn()
+const mockFetch = vi.fn() as any
+mockFetch.raw = vi.fn()
+mockFetch.create = vi.fn()
 global.$fetch = mockFetch
 
 describe('Posts API', () => {
@@ -242,8 +244,8 @@ describe('Posts API', () => {
         body: postWithFiles
       })
 
-      expect(result.data.attachedFiles).toHaveLength(2)
-      expect(result.data.attachedFiles[0].filename).toBe('image1.jpg')
+      expect((result.data as any)?.attachedFiles).toHaveLength(2)
+      expect((result.data as any)?.attachedFiles[0].filename).toBe('image1.jpg')
     })
   })
 
@@ -286,7 +288,7 @@ describe('Posts API', () => {
 
       const result = await $fetch('/api/posts/test-post-id')
 
-      expect(result.data.view_count).toBe(11)
+      expect(result.data?.view_count).toBe(11)
     })
   })
 
@@ -302,7 +304,7 @@ describe('Posts API', () => {
       const result = await $fetch('/api/posts/test-post-id/verify', {
         method: 'POST',
         body: { password: 'correct-password' }
-      })
+      }) as any
 
       expect(mockFetch).toHaveBeenCalledWith('/api/posts/test-post-id/verify', {
         method: 'POST',
@@ -322,7 +324,7 @@ describe('Posts API', () => {
       const result = await $fetch('/api/posts/test-post-id/verify', {
         method: 'POST',
         body: { password: 'wrong-password' }
-      })
+      }) as any
 
       expect(result.valid).toBe(false)
     })
@@ -362,16 +364,16 @@ describe('Posts API', () => {
 
       mockFetch.mockResolvedValue(mockResponse)
 
-      const result = await $fetch('/api/posts/test-post-id', {
-        method: 'PUT',
+      const result = await ($fetch as any)('/api/posts/test-post-id', {
+        method: 'POST',
         body: editPostData
       })
 
       expect(mockFetch).toHaveBeenCalledWith('/api/posts/test-post-id', {
-        method: 'PUT',
+        method: 'POST',
         body: editPostData
       })
-      expect(result.data.title).toBe('Updated Post Title')
+      expect(result.data?.title).toBe('Updated Post Title')
     })
 
     it('should handle incorrect password for edit', async () => {
@@ -382,8 +384,8 @@ describe('Posts API', () => {
 
       mockFetch.mockRejectedValue(mockError)
 
-      await expect($fetch('/api/posts/test-post-id', {
-        method: 'PUT',
+      await expect(($fetch as any)('/api/posts/test-post-id', {
+        method: 'POST',
         body: { ...editPostData, password: 'wrong-password' }
       })).rejects.toEqual(mockError)
     })
@@ -401,8 +403,8 @@ describe('Posts API', () => {
 
       mockFetch.mockRejectedValue(mockError)
 
-      await expect($fetch('/api/posts/test-post-id', {
-        method: 'PUT',
+      await expect(($fetch as any)('/api/posts/test-post-id', {
+        method: 'POST',
         body: invalidEditData
       })).rejects.toEqual(mockError)
     })
@@ -417,16 +419,16 @@ describe('Posts API', () => {
 
       mockFetch.mockResolvedValue(mockResponse)
 
-      const result = await $fetch('/api/posts/test-post-id', {
-        method: 'DELETE',
+      const result = await ($fetch as any)('/api/posts/test-post-id', {
+        method: 'POST',
         body: { password: 'correct-password' }
       })
 
       expect(mockFetch).toHaveBeenCalledWith('/api/posts/test-post-id', {
-        method: 'DELETE',
+        method: 'POST',
         body: { password: 'correct-password' }
       })
-      expect(result.message).toBe('게시글이 삭제되었습니다.')
+      expect((result as any).message).toBe('게시글이 삭제되었습니다.')
     })
 
     it('should handle incorrect password for delete', async () => {
@@ -437,8 +439,8 @@ describe('Posts API', () => {
 
       mockFetch.mockRejectedValue(mockError)
 
-      await expect($fetch('/api/posts/test-post-id', {
-        method: 'DELETE',
+      await expect(($fetch as any)('/api/posts/test-post-id', {
+        method: 'POST',
         body: { password: 'wrong-password' }
       })).rejects.toEqual(mockError)
     })
@@ -451,8 +453,8 @@ describe('Posts API', () => {
 
       mockFetch.mockRejectedValue(mockError)
 
-      await expect($fetch('/api/posts/nonexistent-id', {
-        method: 'DELETE',
+      await expect(($fetch as any)('/api/posts/nonexistent-id', {
+        method: 'POST',
         body: { password: 'any-password' }
       })).rejects.toEqual(mockError)
     })
@@ -479,8 +481,8 @@ describe('Posts API', () => {
         method: 'POST',
         body: { action: 'like' }
       })
-      expect(result.data.like_count).toBe(6)
-      expect(result.data.is_liked).toBe(true)
+      expect(result.data?.like_count).toBe(6)
+      expect((result.data as any)?.is_liked).toBe(true)
     })
 
     it('should handle unlike action', async () => {
@@ -499,8 +501,8 @@ describe('Posts API', () => {
         body: { action: 'unlike' }
       })
 
-      expect(result.data.like_count).toBe(4)
-      expect(result.data.is_liked).toBe(false)
+      expect(result.data?.like_count).toBe(4)
+      expect((result.data as any)?.is_liked).toBe(false)
     })
 
     it('should handle like on non-existent post', async () => {
@@ -589,8 +591,8 @@ describe('Posts API', () => {
         body: maliciousContent
       })
 
-      expect(result.data.content).not.toContain('<script>')
-      expect(result.data.content).toContain('<p>Normal content</p>')
+      expect((result.data as any)?.content).not.toContain('<script>')
+      expect((result.data as any)?.content).toContain('<p>Normal content</p>')
     })
   })
 
@@ -623,7 +625,7 @@ describe('Posts API', () => {
       })
 
       expect(result.success).toBe(true)
-      expect(result.data.content).toHaveLength(largeContent.length)
+      expect((result.data as any)?.content).toHaveLength(largeContent.length)
     })
 
     it('should handle posts with many attachments', async () => {
@@ -657,9 +659,9 @@ describe('Posts API', () => {
         body: postWithManyFiles
       })
 
-      expect(result.data.attachedFiles).toHaveLength(10)
-      expect(result.data.attachedFiles[0].filename).toBe('image1.jpg')
-      expect(result.data.attachedFiles[9].filename).toBe('image10.jpg')
+      expect((result.data as any)?.attachedFiles).toHaveLength(10)
+      expect((result.data as any)?.attachedFiles[0].filename).toBe('image1.jpg')
+      expect((result.data as any)?.attachedFiles[9].filename).toBe('image10.jpg')
     })
   })
 })

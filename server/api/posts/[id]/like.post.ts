@@ -1,105 +1,56 @@
-// server/api/posts/[id]/like.post.ts
-import { serverSupabaseClient } from "#supabase/server";
-import type { Database } from '~/types/supabase';
-import { withApiKeyValidation } from '~/server/utils/apiKeyValidation';
+/**
+ * @description 게시글 좋아요 API (리팩토링 완료)
+ * 새로운 유틸리티 함수들을 사용하여 중복 코드를 제거하고 안전성을 향상시켰습니다.
+ */
+import { z } from 'zod';
+import { 
+  validateUUIDOrThrow,
+  createSuccessResponse,
+  CommonErrors,
+  getSupabaseClient,
+  findPostById,
+  updateLikeCount,
+  createApiHandler,
+  setUTF8Header
+} from '~/server/utils';
 
-export default withApiKeyValidation(async (event) => {
-  try {
-    const postId = getRouterParam(event, "id");
-    const body = await readBody(event);
+const likeSchema = z.object({
+  action: z.enum(['like', 'unlike']).refine(val => val === 'like' || val === 'unlike', {
+    message: '올바른 액션을 지정해주세요. (like, unlike)'
+  })
+});
 
-    if (!postId) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "게시글 ID가 필요합니다.",
-      });
-    }
+export default createApiHandler(async (event) => {
+  // 1. 라우터 파라미터에서 게시글 ID 추출 및 검증
+  const postId = getRouterParam(event, "id");
+  validateUUIDOrThrow(postId, '게시글 ID');
 
-    // UUID 형식 검증
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(postId)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "올바르지 않은 게시글 ID입니다.",
-      });
-    }
+  // 2. 요청 본문 검증
+  const body = await readBody(event);
+  const { action } = likeSchema.parse(body);
 
-    const { action } = body; // 'like' or 'unlike'
+  // 3. 게시글 존재 확인
+  const supabase = await getSupabaseClient(event);
+  const post = await findPostById(supabase, postId!, false); // 삭제된 게시글 제외
 
-    if (!action || !["like", "unlike"].includes(action)) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "올바른 액션을 지정해주세요. (like, unlike)",
-      });
-    }
-
-    const supabase = await serverSupabaseClient<Database>(event);
-
-    // 게시글 존재 확인
-    const { data: existingPost, error: fetchError } = await supabase
-      .from("posts")
-      .select("id, like_count")
-      .eq("id", postId)
-      .single();
-
-    if (fetchError) {
-      if (fetchError.code === "PGRST116") {
-        throw createError({
-          statusCode: 404,
-          statusMessage: "게시글을 찾을 수 없습니다.",
-        });
-      }
-
-      console.error("Post fetch error:", fetchError);
-      throw createError({
-        statusCode: 500,
-        statusMessage: "게시글 조회에 실패했습니다.",
-      });
-    }
-
-    // 라이크 수 업데이트
-    const newLikeCount =
-      action === "like"
-        ? (existingPost.like_count || 0) + 1
-        : Math.max(0, (existingPost.like_count || 0) - 1);
-
-    const { data: updatedPost, error: updateError } = await supabase
-      .from("posts")
-      .update({
-        like_count: newLikeCount,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", postId)
-      .select("like_count")
-      .single();
-
-    if (updateError) {
-      console.error("Like count update error:", updateError);
-      throw createError({
-        statusCode: 500,
-        statusMessage: "라이크 업데이트에 실패했습니다.",
-      });
-    }
-
-    return {
-      success: true,
-      data: {
-        like_count: updatedPost.like_count,
-        action,
-      },
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error: any) {
-    console.error("Like toggle error:", error);
-
-    if (error.statusCode) {
-      throw error;
-    }
-
-    throw createError({
-      statusCode: 500,
-      statusMessage: "서버 오류가 발생했습니다.",
-    });
+  if (!post) {
+    throw CommonErrors.NotFound.Post();
   }
+
+  // 4. 좋아요 수 업데이트
+  const increment = action === 'like' ? 1 : -1;
+  const newLikeCount = await updateLikeCount(supabase, 'posts', postId!, increment);
+
+  // 5. UTF-8 헤더 설정 및 성공 응답
+  setUTF8Header(event);
+  
+  return createSuccessResponse({
+    like_count: newLikeCount,
+    action,
+  }, `게시글 ${action === 'like' ? '좋아요' : '좋아요 취소'}가 완료되었습니다.`);
+
+}, {
+  method: 'POST',
+  requireAuth: true,
+  customErrorMessage: '좋아요 처리 중 오류가 발생했습니다.'
 });

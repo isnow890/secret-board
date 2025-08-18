@@ -54,3 +54,38 @@ export function createPreview(html: string, maxLength: number = 160): string {
   const plainText = stripHtml(html);
   return truncateText(plainText, maxLength);
 }
+
+/**
+ * HTML 콘텐츠 보안 정리 함수
+ * 위험한 태그와 속성을 제거하여 XSS 공격을 방지합니다.
+ * @param html 정리할 HTML 문자열
+ * @returns 정리된 HTML 문자열
+ */
+export function sanitizeHtml(html: string): string {
+  if (!html) return '';
+  
+  let cleaned = html;
+
+  // 위험한 스크립트 태그 제거
+  cleaned = cleaned.replace(
+    /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
+    ""
+  );
+  cleaned = cleaned.replace(
+    /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
+    ""
+  );
+  cleaned = cleaned.replace(
+    /<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi,
+    ""
+  );
+  cleaned = cleaned.replace(/<embed\b[^>]*>/gi, "");
+  
+  // 이벤트 핸들러 제거
+  cleaned = cleaned.replace(/on\w+\s*=\s*["'][^"']*["']/gi, "");
+  
+  // javascript: URL 제거
+  cleaned = cleaned.replace(/javascript:/gi, "");
+
+  return cleaned.trim();
+}

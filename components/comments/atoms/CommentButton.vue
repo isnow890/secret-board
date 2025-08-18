@@ -7,6 +7,7 @@
     :disabled="disabled"
     :loading="loading"
     :class="computedClass"
+    :style="type === 'like' && active ? { color: '#dc2626' } : {}"
     :title="tooltip"
   >
     <Icon
@@ -60,7 +61,7 @@ const buttonConfig = computed(() => {
         size: 'sm' as const,
         icon: props.active ? 'mdi:heart' : 'mdi:heart-outline',
         baseClass: 'transition-colors duration-200',
-        activeClass: props.active ? 'text-red-500' : 'text-text-tertiary hover:text-red-500',
+        activeClass: props.active ? '!text-red-600' : 'text-text-tertiary hover:text-red-600',
       }
     case 'reply':
       return {

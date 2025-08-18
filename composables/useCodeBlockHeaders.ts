@@ -2,11 +2,14 @@ import { nextTick } from "vue";
 import type { EditorInstance } from "~/types/shared/editor";
 
 /**
- * TipTap 코드블럭 헤더 관리 composable
- * 에디터와 뷰어에서 공통으로 사용되는 코드블럭 헤더 로직
+ * @description Tiptap 에디터의 코드 블록에 Notion 스타일의 헤더(언어 표시, 복사 버튼)를 추가하고 관리하는 컴포저블입니다.
+ * 에디터와 뷰어에서 공통으로 사용됩니다.
  */
 export const useCodeBlockHeaders = () => {
-  // 언어 표시명 매핑
+  /**
+   * @description 프로그래밍 언어 코드와 사용자에게 보여질 이름을 매핑하는 객체
+   * @type {Record<string, string>}
+   */
   const languageDisplayMap: Record<string, string> = {
     js: "JavaScript",
     ts: "TypeScript",
@@ -25,7 +28,9 @@ export const useCodeBlockHeaders = () => {
   };
 
   /**
-   * 언어 코드를 표시용 이름으로 변환
+   * @description 언어 코드를 화면에 표시할 이름으로 변환합니다. 매핑에 없으면 대문자로 변환하여 반환합니다.
+   * @param {string | null | undefined} lang - 변환할 언어 코드 (e.g., 'js')
+   * @returns {string} 표시용 언어 이름 (e.g., 'JavaScript')
    */
   const getLanguageDisplay = (lang: string | null | undefined): string => {
     if (!lang) return "TEXT";
@@ -33,7 +38,10 @@ export const useCodeBlockHeaders = () => {
   };
 
   /**
-   * 코드블럭 헤더 엘리먼트 생성 (Notion 스타일)
+   * @description 코드 블록에 추가될 헤더 DOM 요소를 생성합니다.
+   * @param {string} code - 복사할 코드 내용
+   * @param {string} lang - 코드의 프로그래밍 언어
+   * @returns {HTMLElement} 생성된 헤더 요소
    */
   const buildCodeBlockHeader = (code: string, lang: string): HTMLElement => {
     const header = document.createElement("div");
@@ -52,35 +60,29 @@ export const useCodeBlockHeaders = () => {
   };
 
   /**
-   * 개별 코드블럭에 헤더 첨부 (Notion 스타일 - absolute positioning)
+   * @description 특정 코드 블록(`<pre>`) 요소에 헤더를 첨부합니다.
+   * @param {HTMLElement} block - 헤더를 추가할 `<pre>` 요소
    */
   const attachHeaderToBlock = (block: HTMLElement): void => {
-    // DOM 구조: <pre class="editor-code-block"><code>...</code></pre>
-    // block 자체가 pre 요소임
     const codeEl = block.querySelector("code");
-
     if (!codeEl) return;
 
-    // 이미 헤더가 있으면 제거
     const existing = block.querySelector(".code-block-header");
     if (existing) existing.remove();
 
-    // 언어 추출
     const lang =
       block.getAttribute("data-language") ||
       (codeEl.className.match(/language-(\w+)/) || [])[1] ||
       "";
 
-    // 코드 내용 추출
     const codeText = codeEl.textContent || "";
-
-    // 헤더 생성 및 추가 (absolute positioned이므로 위치 상관없이 추가)
     const header = buildCodeBlockHeader(codeText, lang);
-    block.appendChild(header); // absolute positioned이므로 맨 마지막에 추가
+    block.appendChild(header);
   };
 
   /**
-   * 에디터 DOM에서 모든 코드블럭 감지 및 헤더 추가
+   * @description 에디터 DOM 내의 모든 코드 블록을 찾아 헤더를 추가합니다.
+   * @param {EditorInstance} editor - Tiptap 에디터 인스턴스
    */
   const detectCodeBlocks = (editor: EditorInstance): void => {
     if (!editor) return;
@@ -95,7 +97,8 @@ export const useCodeBlockHeaders = () => {
   };
 
   /**
-   * 복사 버튼 클릭 이벤트 핸들러 (전역 이벤트 위임)
+   * @description 코드 블록 헤더의 복사 버튼에 대한 전역 클릭 이벤트 핸들러를 설정합니다.
+   * 이벤트 위임을 사용하여 한 번만 등록됩니다.
    */
   const setupCopyButtonHandler = (): void => {
     const handleCopyClick = async (e: Event) => {
@@ -110,14 +113,12 @@ export const useCodeBlockHeaders = () => {
       try {
         await navigator.clipboard.writeText(content);
 
-        // 성공 피드백
         btn.innerHTML = `
           <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
         `;
 
-        // 1.5초 후 원래 아이콘으로 복구
         setTimeout(() => {
           btn.innerHTML = `
             <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,7 +131,6 @@ export const useCodeBlockHeaders = () => {
       }
     };
 
-    // 전역 이벤트 리스너 등록 (중복 방지)
     if (!document.body.dataset.copyHandlerSetup) {
       document.addEventListener("click", handleCopyClick);
       document.body.dataset.copyHandlerSetup = "true";
@@ -138,7 +138,9 @@ export const useCodeBlockHeaders = () => {
   };
 
   /**
-   * 코드블럭 감지 및 헤더 추가를 위한 편의 함수
+   * @description 렌더링 지연을 고려하여 코드 블록 감지 및 헤더 추가를 실행합니다.
+   * @param {EditorInstance} editor - Tiptap 에디터 인스턴스
+   * @param {number} [delay=100] - 실행 지연 시간 (ms)
    */
   const detectCodeBlocksWithDelay = (
     editor: EditorInstance,
@@ -148,15 +150,12 @@ export const useCodeBlockHeaders = () => {
   };
 
   return {
-    // 핵심 함수들
     detectCodeBlocks,
     detectCodeBlocksWithDelay,
     getLanguageDisplay,
     buildCodeBlockHeader,
     attachHeaderToBlock,
     setupCopyButtonHandler,
-
-    // 데이터
     languageDisplayMap,
   };
 };

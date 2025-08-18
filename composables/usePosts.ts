@@ -10,7 +10,7 @@
  * @author Hit Secret Team
  */
 
-import { ref, readonly } from "vue";
+import { ref, readonly, onUnmounted } from "vue";
 import type {
   Post,
   PostSummary,
@@ -19,6 +19,31 @@ import type {
   PaginationInfo,
   ApiResponse,
 } from "~/types";
+
+// 게시글 API 응답 타입 정의
+type PostListResponse = ApiResponse<{
+  posts: PostSummary[];
+  pagination: PaginationInfo;
+}>;
+
+type PostDetailResponse = ApiResponse<Post>;
+
+type PostCreateResponse = ApiResponse<Post>;
+
+type PostEditResponse = ApiResponse<Post>;
+
+type PostDeleteResponse = ApiResponse<{
+  deletedImages: number;
+  deletedAttachments: number;
+}>;
+
+type PostPasswordVerifyResponse = ApiResponse<{
+  valid: boolean;
+}>;
+
+type PostViewResponse = ApiResponse<{
+  message: string;
+}>;
 
 /**
  * 게시글 목록 관리를 위한 컴포저블
@@ -75,12 +100,9 @@ export const usePosts = () => {
     }
 
     try {
-      const response = await $fetch<
-        ApiResponse<{
-          posts: PostSummary[];
-          pagination: PaginationInfo;
-        }>
-      >(`/api/posts?${queryParams}`);
+      const response = (await $fetch(
+        `/api/posts?${queryParams}`
+      )) as PostListResponse;
 
       if (response?.success && response.data) {
         const newPosts = response.data.posts;
@@ -102,10 +124,10 @@ export const usePosts = () => {
     postData: CreatePostRequest
   ): Promise<Post | undefined> => {
     try {
-      const response = await $fetch("/api/posts", {
+      const response = (await $fetch("/api/posts", {
         method: "POST",
         body: postData,
-      });
+      })) as PostCreateResponse;
 
       if (response?.success && response.data) {
         useToast().add({
@@ -131,7 +153,9 @@ export const usePosts = () => {
   const fetchMostViewedPosts = async (
     limit: number = 5
   ): Promise<PostSummary[]> => {
-    const response = await $fetch(`/api/posts?sort=views&limit=${limit}`);
+    const response = (await $fetch(
+      `/api/posts?sort=views&limit=${limit}`
+    )) as PostListResponse;
 
     if (response?.success && response.data) {
       return response.data.posts as PostSummary[];
@@ -143,7 +167,9 @@ export const usePosts = () => {
   const fetchPopularPosts = async (
     limit: number = 5
   ): Promise<PostSummary[]> => {
-    const response = await $fetch(`/api/posts/trending?limit=${limit}`);
+    const response = (await $fetch(
+      `/api/posts/trending?limit=${limit}`
+    )) as PostListResponse;
 
     if (response?.success && response.data) {
       return response.data.posts as PostSummary[];
@@ -170,7 +196,9 @@ export const usePosts = () => {
       queryParams.append("search", params.search.trim());
     }
 
-    const response = await $fetch(`/api/posts?${queryParams}`);
+    const response = (await $fetch(
+      `/api/posts?${queryParams}`
+    )) as PostListResponse;
 
     if (response?.success && response.data) {
       return {
@@ -220,6 +248,12 @@ export const usePost = (postId: string) => {
   /** 에러 메시지 */
   const error = ref("");
 
+  /** 실시간 구독 상태 */
+  const realtimeChannel = ref<any>(null);
+
+  /** AI 요약 생성 중 상태 */
+  const aiSummaryGenerating = ref(false);
+
   // 좋아요 관리
   const {
     isLiked,
@@ -233,7 +267,9 @@ export const usePost = (postId: string) => {
   const fetchPost = async (): Promise<Post | undefined> => {
     try {
       loading.value = true;
-      const response = await $fetch<ApiResponse<Post>>(`/api/posts/${postId}`);
+      const response = (await $fetch(
+        `/api/posts/${postId}`
+      )) as PostDetailResponse;
 
       if (response?.success && response.data) {
         post.value = response.data as Post;
@@ -248,7 +284,24 @@ export const usePost = (postId: string) => {
         }
 
         await incrementViewCount();
-        return response.data as Post;
+
+        // AI 요약 생성 중 상태 확인
+        const postData = response.data as Post;
+        if (!postData.ai_summary && postData.content) {
+          // HTML에서 텍스트 길이 확인
+          const textLength = postData.content
+            .replace(/<[^>]*>/g, "")
+            .trim().length;
+          if (textLength >= 100) {
+            aiSummaryGenerating.value = true;
+            console.log("🤖 AI summary generation in progress...");
+          }
+        }
+
+        // 게시글 로드 후 실시간 구독 설정
+        setupRealtimeSubscription();
+
+        return postData;
       }
     } catch (fetchError: any) {
       console.error("게시글 조회 실패:", fetchError);
@@ -315,15 +368,39 @@ export const usePost = (postId: string) => {
     editData: EditPostRequest
   ): Promise<Post | undefined> => {
     try {
-      const response = await $fetch(`/api/posts/${postId}/edit`, {
+      const response = (await $fetch(`/api/posts/${postId}/edit`, {
         method: "POST",
         body: editData,
-      });
+      })) as PostEditResponse;
 
       if (response?.success && response.data) {
         // 현재 post 상태 업데이트 (부분 업데이트 병합)
         if (post.value) {
-          post.value = { ...post.value, ...response.data } as Post;
+          const updatedPost = { ...post.value, ...response.data } as Post;
+          post.value = updatedPost;
+
+          // 수정된 내용이 충분히 길면 AI 요약 재생성 중 상태 활성화
+          if (updatedPost.content) {
+            const textLength = updatedPost.content
+              .replace(/<[^>]*>/g, "")
+              .trim().length;
+            if (textLength >= 100) {
+              // AI 요약 초기화하고 생성 중 상태 활성화
+              post.value.ai_summary = null;
+              post.value.summary_generated_at = null;
+              aiSummaryGenerating.value = true;
+              console.log(
+                "🤖 AI summary regeneration in progress after edit..."
+              );
+
+              // 토스트로 사용자에게 알림
+              useToast().add({
+                title: "AI 요약 재생성 중",
+                description: "잠시 후 새로운 요약이 표시됩니다.",
+                color: "blue",
+              });
+            }
+          }
         }
 
         useToast().add({
@@ -348,13 +425,15 @@ export const usePost = (postId: string) => {
   // 게시글 삭제
   const deletePost = async (password: string): Promise<boolean> => {
     try {
-      const response = await $fetch(`/api/posts/${postId}`, {
-        method: "DELETE" as any,
-        body: { password },
-      });
+      const response = (await $fetch(`/api/posts/${postId}/delete`, {
+        method: "POST",
+        body: {
+          password: password,
+        },
+      })) as PostDeleteResponse;
 
       if (response?.success) {
-        const deletedImages = (response.data as any)?.deletedImages;
+        const deletedImages = response.data?.deletedImages;
         useToast().add({
           title: "게시글이 삭제되었습니다",
           description: deletedImages
@@ -375,10 +454,10 @@ export const usePost = (postId: string) => {
   // 게시글 비밀번호 확인
   const verifyPostPassword = async (password: string): Promise<boolean> => {
     try {
-      const response = await $fetch(`/api/posts/${postId}/verify`, {
+      const response = (await $fetch(`/api/posts/${postId}/verify`, {
         method: "POST",
         body: { password },
-      });
+      })) as PostPasswordVerifyResponse;
 
       return response.success as boolean;
     } catch (err: any) {
@@ -386,6 +465,122 @@ export const usePost = (postId: string) => {
       throw err;
     }
   };
+
+  // 실시간 구독 설정 (AI 요약 업데이트 감지)
+  const setupRealtimeSubscription = () => {
+    if (!post.value || realtimeChannel.value) {
+      console.log("🔄 Realtime subscription setup skipped:", {
+        hasPost: !!post.value,
+        hasChannel: !!realtimeChannel.value,
+        postId,
+      });
+      return;
+    }
+
+    const supabase = useSupabaseClient();
+
+    console.log("🔄 Setting up realtime subscription for post:", postId);
+    console.log("📡 Supabase client ready:", !!supabase);
+    console.log("📄 Current post state:", {
+      id: post.value?.id,
+      hasAiSummary: !!post.value?.ai_summary,
+      aiSummaryGenerating: aiSummaryGenerating.value,
+    });
+
+    // AI 요약 업데이트를 위한 실시간 채널 생성
+    const channelName = `post-${postId}`;
+    console.log("📺 Creating channel:", channelName);
+
+    realtimeChannel.value = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "posts",
+          filter: `id=eq.${postId}`,
+        },
+        (payload) => {
+          console.log("📡 Post updated via realtime:", {
+            event: payload.eventType,
+            table: payload.table,
+            schema: payload.schema,
+            old: payload.old,
+            new: payload.new,
+          });
+
+          // AI 요약이 업데이트된 경우만 처리
+          if (payload.new && post.value) {
+            const newPost = payload.new as any;
+            const oldSummary = post.value.ai_summary;
+            const newSummary = newPost.ai_summary;
+
+            console.log("📝 Summary comparison:", {
+              old: oldSummary,
+              new: newSummary,
+              changed: oldSummary !== newSummary,
+            });
+
+            // AI 요약이나 생성시간이 변경되었는지 확인
+            if (
+              newPost.ai_summary !== post.value.ai_summary ||
+              newPost.summary_generated_at !== post.value.summary_generated_at
+            ) {
+              console.log("✅ AI summary changed, updating post state");
+
+              // post 상태 업데이트
+              post.value = {
+                ...post.value,
+                ai_summary: newPost.ai_summary,
+                summary_generated_at: newPost.summary_generated_at,
+              } as Post;
+
+              console.log(
+                "📄 AI summary updated via realtime:",
+                newPost.ai_summary
+              );
+
+              // AI 요약이 생성되면 생성 중 상태 해제
+              if (newPost.ai_summary) {
+                aiSummaryGenerating.value = false;
+                console.log("🤖 AI summary generation completed");
+
+                // 수정시에만 토스트 알림 표시
+                if (oldSummary === null || oldSummary === undefined) {
+                  useToast().add({
+                    title: "AI 요약 완료",
+                    description: "새로운 요약이 생성되었습니다.",
+                    color: "green",
+                  });
+                }
+              }
+            } else {
+              console.log("📭 No AI summary changes detected");
+            }
+          } else {
+            console.log("⚠️ No payload.new or post.value missing");
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("📺 Realtime subscription status:", status);
+      });
+  };
+
+  // 실시간 구독 정리
+  const cleanupRealtimeSubscription = () => {
+    if (realtimeChannel.value) {
+      realtimeChannel.value.unsubscribe();
+      realtimeChannel.value = null;
+      console.log("Realtime subscription cleaned up");
+    }
+  };
+
+  // 컴포넌트가 언마운트될 때 정리
+  onUnmounted(() => {
+    cleanupRealtimeSubscription();
+  });
 
   return {
     // 상태
@@ -395,6 +590,7 @@ export const usePost = (postId: string) => {
     isLiked: readonly(isLiked),
     displayLikeCount: readonly(displayLikeCount),
     likePending: readonly(likePending),
+    aiSummaryGenerating: readonly(aiSummaryGenerating),
 
     // 메서드
     fetchPost,
@@ -402,5 +598,7 @@ export const usePost = (postId: string) => {
     editPost,
     deletePost,
     verifyPostPassword,
+    setupRealtimeSubscription,
+    cleanupRealtimeSubscription,
   };
 };

@@ -9,14 +9,14 @@ export default defineConfig({
   reporter: "html",
 
   use: {
-    baseURL: "http://localhost:3000/secret",
+    baseURL: "http://localhost:3007/secret",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
 
   // Global test setup
-  globalSetup: require.resolve("./tests/setup/global-setup.ts"),
+  globalSetup: "./tests/setup/global-setup.ts",
 
   projects: [
     {

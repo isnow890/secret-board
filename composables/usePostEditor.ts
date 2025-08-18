@@ -1,13 +1,13 @@
 /**
  * 게시글 수정 전용 컴포저블
- * 
+ *
  * 주요 기능:
  * - 게시글 수정 권한 인증 (sessionStorage 기반, 1시간 유효)
  * - 폼 상태 관리 및 유효성 검사
  * - 수정 사항 자동 감지 및 저장 경고
  * - 브라우저 마감/리로드 시 경고 처리
  * - 파일 업로드 에러 처리
- * 
+ *
  * @param postId 수정할 게시글 ID
  * @author Hit Secret Team
  */
@@ -23,23 +23,23 @@ export const usePostEditor = (postId: string) => {
   const router = useRouter();
 
   // === 인증 상태 관리 ===
-  
+
   /** 수정 권한 인증 상태 */
   const isAuthenticated = ref(false);
-  
+
   /** sessionStorage에 저장된 인증된 비밀번호 */
   const storedPassword = ref("");
 
   // === UI 상태 ===
-  
+
   /** 비밀번호 확인 모달 표시 상태 */
   const showPasswordModal = ref(false);
-  
+
   /** 비밀번호 대화상자 컴포넌트 참조 */
   const passwordDialogRef = ref();
 
   // === 폼 데이터 ===
-  
+
   /** 게시글 수정 폼 데이터 */
   const form = ref<EditPostRequest>({
     title: "",
@@ -50,23 +50,23 @@ export const usePostEditor = (postId: string) => {
   });
 
   // === 폼 상태 ===
-  
+
   /** 폼 유효성 검사 에러 메시지 */
   const errors = ref<Partial<Record<keyof EditPostRequest, string>>>({});
-  
+
   /** 폼 제출 중 상태 */
   const submitting = ref(false);
-  
+
   /** 폼 제출 에러 메시지 */
   const submitError = ref("");
 
   // === 게시글 데이터 ===
-  
+
   /** 원본 게시글 데이터 (변경 사항 감지용) */
   const originalPost = ref<Post | null>(null);
 
   // === 인증 처리 ===
-  
+
   /**
    * sessionStorage에서 수정 권한 인증 상태를 확인
    * 1시간 이내 인증된 경우에만 인증 상태 유지
@@ -132,7 +132,9 @@ export const usePostEditor = (postId: string) => {
         // 게시글 데이터 로드 및 폼 초기화
         await loadPostAndInitializeForm();
       } else {
-        passwordDialogRef.value?.setError("비밀번호가 틀렸습니다. 다시 확인해주세요.");
+        passwordDialogRef.value?.setError(
+          "비밀번호가 틀렸습니다. 다시 확인해주세요."
+        );
       }
     } catch (error: any) {
       console.error("비밀번호 확인 실패:", error);
@@ -156,6 +158,8 @@ export const usePostEditor = (postId: string) => {
         originalPost.value = postData;
         form.value.title = postData.title;
         form.value.content = postData.content;
+        // 닉네임은 서버 스키마상 선택일 수 있어 폼에는 기본값으로 폴백
+        form.value.nickname = postData.nickname ?? ""; // 닉네임 설정
         form.value.attachedFiles = postData.attached_files || [];
       }
     } catch (error) {
@@ -169,10 +173,10 @@ export const usePostEditor = (postId: string) => {
   };
 
   // === 폼 검증 ===
-  
+
   /**
    * 폼 데이터 유효성 검사
-   * 제목과 내용의 길이 제한을 검사
+   * 수정 모드에서는 제목 3자 이상, 내용 10자 이상 검사
    * @returns 유효성 검사 통과 여부
    */
   const validateForm = (): boolean => {
@@ -181,8 +185,8 @@ export const usePostEditor = (postId: string) => {
     const title = form.value.title.trim();
     const content = form.value.content.trim();
 
-    if (title.length < 5) {
-      errors.value.title = "제목은 5자 이상이어야 합니다.";
+    if (title.length < 3) {
+      errors.value.title = "제목은 3자 이상이어야 합니다.";
     } else if (title.length > 255) {
       errors.value.title = "제목은 255자 이하여야 합니다.";
     }
@@ -197,14 +201,15 @@ export const usePostEditor = (postId: string) => {
   };
 
   // === 계산된 상태 ===
-  
+
   /**
    * 폼의 유효성 상태 (실시간 계산)
-   * 제목과 내용의 최소 조건을 만족하는지 확인
+   * 수정 모드에서는 제목과 내용만 검증 (닉네임은 변경 불가)
+   * 수정 모드에서는 기존 게시글 조건을 유지 (제목 3자 이상)
    */
   const isFormValid = computed(() => {
     return (
-      form.value.title.trim().length >= 5 &&
+      form.value.title.trim().length >= 3 &&
       form.value.content.trim().length >= 10
     );
   });
@@ -219,13 +224,14 @@ export const usePostEditor = (postId: string) => {
     return (
       form.value.title !== originalPost.value.title ||
       form.value.content !== originalPost.value.content ||
+      form.value.nickname !== originalPost.value.nickname ||
       JSON.stringify(form.value.attachedFiles) !==
         JSON.stringify(originalPost.value.attached_files || [])
     );
   });
 
   // === 폼 제출 ===
-  
+
   /**
    * 게시글 수정 제출 처리
    * 유효성 검사, 인증 확인 후 서버에 수정 요청 전송
@@ -259,7 +265,8 @@ export const usePostEditor = (postId: string) => {
           ...originalPost.value,
           title: submitData.title,
           content: submitData.content,
-          attached_files: submitData.attachedFiles || []
+          nickname: submitData.nickname,
+          attached_files: submitData.attachedFiles || [],
         };
       }
 
@@ -288,7 +295,7 @@ export const usePostEditor = (postId: string) => {
   };
 
   // === 에러 처리 ===
-  
+
   /**
    * 파일 업로드 에러 처리
    * 에러 메시지를 사용자에게 토스트로 표시
@@ -304,7 +311,7 @@ export const usePostEditor = (postId: string) => {
   };
 
   // === 브라우저 이벤트 처리 ===
-  
+
   /**
    * 브라우저 새로고침/닫기 시 경고 설정
    * 수정 사항이 있는 경우 브라우저 나가기 전 경고 메시지 표시
@@ -351,7 +358,7 @@ export const usePostEditor = (postId: string) => {
   };
 
   // === 초기화 ===
-  
+
   /**
    * 컴포저블 초기화
    * 인증 상태 확인, 게시글 로드, 브라우저 경고 설정 수행

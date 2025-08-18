@@ -1,4 +1,14 @@
-// server/api/comments/[postId].get.ts
+/**
+ * @description 특정 게시글의 댓글 목록을 조회하는 API 엔드포인트입니다.
+ * 댓글은 계층 구조로 변환되어 반환되며, 삭제된 댓글도 포함됩니다.
+ * @see /api/comments/:postId
+ * @method GET
+ * @param {object} event - H3 이벤트 객체
+ * @returns {Promise<object>} 댓글 목록과 총 개수를 포함하는 응답 객체
+ * @throws {400} 게시글 ID가 없거나 형식이 올바르지 않은 경우
+ * @throws {404} 해당 게시글을 찾을 수 없는 경우
+ * @throws {500} 서버 오류 발생 시
+ */
 import { serverSupabaseClient } from "#supabase/server";
 import type { Database } from "~/types/supabase";
 

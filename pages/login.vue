@@ -35,7 +35,7 @@
         <form @submit.prevent="handleLogin" class="space-y-6">
           <UiInput
             v-model="password"
-            type="password"
+            :type="showPassword ? 'text' : 'password'"
             placeholder="비밀번호를 입력하세요"
             :disabled="loading"
             required
@@ -45,7 +45,21 @@
             spellcheck="false"
             data-form-type="other"
             class="w-full"
-          />
+          >
+            <template #suffix>
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="text-text-tertiary hover:text-text-primary transition-colors"
+                :disabled="loading"
+              >
+                <Icon 
+                  :name="showPassword ? 'lucide:eye-off' : 'lucide:eye'" 
+                  class="w-4 h-4" 
+                />
+              </button>
+            </template>
+          </UiInput>
 
           <UiButton
             type="submit"
@@ -78,21 +92,21 @@
       <div class="text-center mt-6 space-y-3">
         <p class="text-xs text-text-tertiary leading-relaxed">
           사이트에 접속함으로써
-          <NuxtLink
-            to="/terms"
+          <a
+            href="/secret/terms"
             target="_blank"
             class="text-accent-blue hover:text-accent-blue-hover underline"
           >
             이용약관
-          </NuxtLink>
+          </a>
           과
-          <NuxtLink
-            to="/privacy"
+          <a
+            href="/secret/privacy"
             target="_blank"
             class="text-accent-blue hover:text-accent-blue-hover underline"
           >
             개인정보처리방침
-          </NuxtLink>
+          </a>
           에<br />동의하는 것으로 간주됩니다.
         </p>
       </div>
@@ -136,6 +150,7 @@ const authStore = useAuthStore();
 const { isAuthenticated, loading, error } = storeToRefs(authStore);
 const { login, checkAuth } = authStore;
 const password = ref("");
+const showPassword = ref(false);
 
 const handleLogin = async () => {
   if (await login(password.value)) {

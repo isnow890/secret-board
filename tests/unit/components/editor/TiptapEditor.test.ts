@@ -1,5 +1,5 @@
 // tests/unit/components/editor/TiptapEditor.test.ts
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount, VueWrapper } from '@vue/test-utils'
 import TiptapEditor from '~/components/editor/TiptapEditor.vue'
 
@@ -43,7 +43,9 @@ vi.mock('#imports', () => ({
 }))
 
 // Mock $fetch
-const mockFetch = vi.fn()
+const mockFetch = vi.fn() as any
+mockFetch.raw = vi.fn()
+mockFetch.create = vi.fn()
 global.$fetch = mockFetch
 
 // Mock components
@@ -171,7 +173,7 @@ describe('TiptapEditor', () => {
       const fileInput = wrapper.find('input[type="file"]')
       const imageButton = wrapper.find('button[title="Upload Image"]')
       
-      const clickSpy = vi.spyOn(fileInput.element, 'click')
+      const clickSpy = vi.spyOn(fileInput.element as HTMLInputElement, 'click')
       
       await imageButton.trigger('click')
       
@@ -251,7 +253,7 @@ describe('TiptapEditor', () => {
       })
 
       // Mock successful upload with progress
-      mockFetch.mockImplementation(async (url, options) => {
+      mockFetch.mockImplementation(async (url: string, options: any) => {
         // Simulate progress callback
         if (options.onUploadProgress) {
           options.onUploadProgress({ percent: 50 })
@@ -327,7 +329,7 @@ describe('TiptapEditor', () => {
       mockEditor.value.getHTML.mockReturnValue('<p>new content</p>')
       
       // Simulate the onUpdate callback that TipTap would call
-      const editorConfig = vi.mocked(mockEditor.value)
+      const editorConfig = vi.mocked(mockEditor.value) as any
       if (editorConfig.onUpdate) {
         editorConfig.onUpdate({ editor: mockEditor.value })
       }

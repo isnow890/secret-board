@@ -14,6 +14,7 @@
 
 import { ref, readonly } from 'vue'
 import type { Comment, CreateCommentRequest, ApiResponse } from '~/types'
+import { useCommentLikes } from '~/composables/useCommentLikes'
 
 /**
  * 댓글 관리를 위한 컴포저블
@@ -53,7 +54,8 @@ export const useComments = (postId: string) => {
     error.value = '';
     
     try {
-      const response = await $fetch(`/api/comments/${postId}`) as ApiResponse<Comment[]>;
+      // @ts-ignore - Nuxt 타입 추론 복잡성 문제 우회
+      const response = (await $fetch(`/api/comments/${postId}`)) as ApiResponse<Comment[]>;
 
       if (response?.success) {
         if (Array.isArray(response.data)) {
@@ -92,10 +94,10 @@ export const useComments = (postId: string) => {
    */
   const createComment = async (commentData: CreateCommentRequest) => {
     try {
-      const response = await $fetch('/api/comments', {
+      const response = (await $fetch('/api/comments', {
         method: 'POST',
         body: commentData
-      })
+      })) as ApiResponse<Comment>;
 
       if (response?.success && response.data) {
         // 새 댓글을 목록에 추가
@@ -264,11 +266,12 @@ export const useComments = (postId: string) => {
    */
   const verifyCommentPassword = async (commentId: string, password: string) => {
     try {
-      const response = await $fetch(`/api/comments/${commentId}/verify`, {
+      const response = (await $fetch(`/api/comments/${commentId}/verify`, {
         method: 'POST',
         body: { password }
-      })
-      return response?.success || false
+      })) as ApiResponse<boolean>;
+      
+      return response?.success || false;
     } catch (err: any) {
       console.error('댓글 비밀번호 확인 실패:', err)
       throw err
@@ -287,10 +290,10 @@ export const useComments = (postId: string) => {
    */
   const editComment = async (commentId: string, content: string, password: string) => {
     try {
-      const response = await $fetch(`/api/comments/${commentId}/edit`, {
+      const response = (await $fetch(`/api/comments/${commentId}/edit`, {
         method: 'POST',
         body: { content, password }
-      })
+      })) as ApiResponse<Comment>;
 
       if (response?.success && response.data) {
         // 댓글 목록에서 해당 댓글 찾아서 내용 업데이트
@@ -333,10 +336,10 @@ export const useComments = (postId: string) => {
    */
   const deleteComment = async (commentId: string, password: string, showToast: boolean = false) => {
     try {
-      const response = await $fetch(`/api/comments/${commentId}/delete`, {
+      const response = (await $fetch(`/api/comments/${commentId}/delete`, {
         method: 'POST',
         body: { password }
-      })
+      })) as ApiResponse<{ deleted: boolean; soft_deleted: boolean }>;
 
       if (response?.success && response.data) {
         const { deleted, soft_deleted } = response.data

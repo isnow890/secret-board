@@ -49,25 +49,25 @@ Object.defineProperty(window, 'sessionStorage', {
 })
 
 // Mock window events
-const mockEventListeners: { [key: string]: EventListener[] } = {}
+const mockEventListeners: { [key: string]: EventListenerOrEventListenerObject[] } = {}
 const originalAddEventListener = window.addEventListener
 const originalRemoveEventListener = window.removeEventListener
 
-window.addEventListener = vi.fn((event: string, listener: EventListener) => {
+window.addEventListener = vi.fn((event: string, listener: EventListenerOrEventListenerObject) => {
   if (!mockEventListeners[event]) {
     mockEventListeners[event] = []
   }
   mockEventListeners[event].push(listener)
-})
+}) as any
 
-window.removeEventListener = vi.fn((event: string, listener: EventListener) => {
+window.removeEventListener = vi.fn((event: string, listener: EventListenerOrEventListenerObject) => {
   if (mockEventListeners[event]) {
     const index = mockEventListeners[event].indexOf(listener)
     if (index > -1) {
       mockEventListeners[event].splice(index, 1)
     }
   }
-})
+}) as any
 
 // Mock confirm dialog
 window.confirm = vi.fn()

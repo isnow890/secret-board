@@ -12,9 +12,9 @@ export default defineNuxtPlugin(() => {
         method: 'POST',
         body: {
           error: {
-            message: error.message,
-            stack: error.stack,
-            name: error.name
+            message: (error as any)?.message || 'Unknown error',
+            stack: (error as any)?.stack || '',
+            name: (error as any)?.name || 'Error'
           },
           info,
           timestamp: new Date().toISOString(),
